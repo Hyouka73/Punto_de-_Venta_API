@@ -44,7 +44,7 @@
 ---
 
 ## FASE 2: PANTALLA MOSTRADOR Y COLA DE SINCRONIZACIÓN OFFLINE (Sprint F2)
-- [ ] **F2.1: Diseño y Generación de Pantalla Mostrador con Google Stitch**
+- [x] **F2.1: Diseño y Generación de Pantalla Mostrador con Google Stitch**
   - Ejecutar el prompt de Stitch para la pantalla Mostrador (botones táctiles >80px por categoría, feedback visual, selector de cantidad rápida, barra de deshacer 10s, total del día e indicador grande de sincronización).
   - Convertir diseño de Stitch a componente `src/ui/screens/MostradorScreen.tsx`.
   - *Criterio de Aceptación:* Cumplimiento del presupuesto de rendimiento (<100ms de respuesta, cero lag táctil, feedback háptico en Android).

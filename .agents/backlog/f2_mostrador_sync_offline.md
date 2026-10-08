@@ -6,7 +6,7 @@ Construir la pantalla principal de mostrador (usando Google Stitch) y la cola de
 ---
 
 ## Tareas
-- [ ] **F2.1: Diseño y Construcción de Pantalla Mostrador con Google Stitch**
+- [x] **F2.1: Diseño y Construcción de Pantalla Mostrador con Google Stitch**
   - Usar la skill `stitch-screen-generation` para generar el Mostrador.
   - Implementar `src/ui/screens/MostradorScreen.tsx`.
   - Integrar eventos táctiles inmediatos, vibración háptica de 50ms y barra Deshacer de 10s.

@@ -3,12 +3,12 @@
 ## 📌 Metadatos de Control de Ejecución
 - **Proyecto:** POS Paletería (Netlify + Google Sheets)
 - **Fecha de Inicio:** 8 de octubre de 2026
-- **Última Actualización:** 2026-10-08T16:08:45-06:00
+- **Última Actualización:** 2026-10-08T17:03:00-06:00
 - **Fase / Sprint Activo:** **Fase 2: Pantalla Mostrador y Cola de Sincronización Offline** (`.agents/backlog/f2_mostrador_sync_offline.md`)
-- **Progreso General:** 6 / 28 tareas completadas (21.4%) — Sprint F1 concluido al 100%
-- **Tarea en Curso:** Ninguna (Listo para iniciar Tarea F2.1)
-- **Última Tarea Cerrada:** `F1.4: Contrato IDataAdapter e Implementación de MockDataAdapter` (Fase 1 concluida)
-- **Siguiente Tarea Inmediata:** `F2.1: Diseño y Generación de Pantalla Mostrador con Google Stitch`
+- **Progreso General:** 7 / 28 tareas completadas (25.0%)
+- **Tarea en Curso:** Ninguna (Listo para iniciar Tarea F2.2)
+- **Última Tarea Cerrada:** `F2.1: Diseño y Construcción de Pantalla Mostrador con Google Stitch`
+- **Siguiente Tarea Inmediata:** `F2.2: Cola Offline con IndexedDB (idb) e Idempotencia`
 
 ---
 
