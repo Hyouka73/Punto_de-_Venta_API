@@ -20,22 +20,22 @@
 ---
 
 ## FASE 1: CIMIENTOS, REGLAS PURAS Y ADAPTADOR SIMULADO (Sprint F1)
-- [ ] **F1.1: Inicialización del Proyecto Vite + React 19 + Tailwind CSS + Vitest**
+- [x] **F1.1: Inicialización del Proyecto Vite + React 19 + Tailwind CSS + Vitest**
   - Crear estructura modular: `src/domain/`, `src/adapters/`, `src/ui/`, `src/infrastructure/`.
   - Configurar Tailwind CSS con paleta cálida y vibrante para heladería.
   - *Criterio de Aceptación:* `npm run build` y `npm test` ejecutan con éxito.
-- [ ] **F1.2: Modelo de Datos e Interfaces de Dominio**
+- [x] **F1.2: Modelo de Datos e Interfaces de Dominio**
   - Implementar interfaces en `src/domain/types.ts`: `Movimiento`, `Jornada`, `CierreDetalle`, `CierreResumen`, `Categoria`, `Combo`.
   - Definir tipos de movimiento: `VENTA`, `ANULACION`, `MERMA`, `ENTRADA`, `AJUSTE`, `RECONSTRUCCION`, `APERTURA`.
   - *Criterio de Aceptación:* Interfaces completas con validación de inmutabilidad (readonly).
-- [ ] **F1.3: Motor de Reglas de Negocio Puras (Sin dependencias)**
+- [x] **F1.3: Motor de Reglas de Negocio Puras (Sin dependencias)**
   - Implementar funciones puras en `src/domain/rules/`:
     - `calculateStock(movimientos, apertura)`: Existencias acumuladas (alerta de stock negativo).
     - `expandCombo(comboId, catalogo)`: Desglose de combos en componentes para descuento de stock.
     - `reconcileClosing(apertura, entradas, mermas, restantes, ventas, efectivoContado, fondoInicial, parametros)`: Cálculo de los 3 cuadres y semáforo.
     - `generateClosingExplanation(diferencias, tolerancias)`: Mensajes explicativos sin lenguaje de culpa.
   - *Criterio de Aceptación:* Pruebas unitarias de **Nivel A** con 100% de cobertura en edge cases.
-- [ ] **F1.4: Contrato `IDataAdapter` e Implementación de `MockDataAdapter`**
+- [x] **F1.4: Contrato `IDataAdapter` e Implementación de `MockDataAdapter`**
   - Definir interfaz `IDataAdapter` en `src/domain/ports/IDataAdapter.ts`.
   - Implementar `MockDataAdapter` en `src/adapters/MockDataAdapter.ts` con almacenamiento local reactivo y retraso artificial configurable.
   - Implementar generador de jornada simulada (150 ventas, cortes de red, anulaciones).

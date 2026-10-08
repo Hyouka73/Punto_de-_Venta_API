@@ -6,13 +6,13 @@ Implementar toda la lógica matemática de negocio y el almacenamiento en memori
 ---
 
 ## Tareas
-- [ ] **F1.1: Inicialización del Proyecto Vite + React 19 + Tailwind CSS + Vitest**
+- [x] **F1.1: Inicialización del Proyecto Vite + React 19 + Tailwind CSS + Vitest**
   - Crear estructura base de directorios (`src/domain/`, `src/adapters/`, `src/ui/`, `src/infrastructure/`).
   - Configurar Tailwind con colores de catálogo.
-- [ ] **F1.2: Modelo de Datos e Interfaces de Dominio**
+- [x] **F1.2: Modelo de Datos e Interfaces de Dominio**
   - Crear `src/domain/types.ts` con tipos inmutables (`Movimiento`, `Jornada`, `CierreDetalle`, etc.).
-- [ ] **F1.3: Motor de Reglas de Negocio Puras**
+- [x] **F1.3: Motor de Reglas de Negocio Puras**
   - Implementar en `src/domain/rules/`: `calculateStock`, `expandCombo`, `reconcileClosing`, `generateClosingExplanation`.
   - Crear suite de pruebas de **Nivel A** en `tests/domain/rules.test.ts`.
-- [ ] **F1.4: Contrato `IDataAdapter` y `MockDataAdapter`**
+- [x] **F1.4: Contrato `IDataAdapter` y `MockDataAdapter`**
   - Implementar `MockDataAdapter` con simulación completa de persistencia y generador de jornada simulada (150 ventas).
