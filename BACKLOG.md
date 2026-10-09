@@ -96,20 +96,20 @@
 ---
 
 ## FASE 5: GOOGLE SHEETS REAL, APPS SCRIPT Y PRUEBAS NIVEL C (Sprint F5)
-- [ ] **F5.1: Estructura de la Hoja de Cálculo en Google Sheets**
+- [x] **F5.1: Estructura de la Hoja de Cálculo en Google Sheets**
   - Crear libro de cálculo maestro con las 8 hojas especificadas: `Catálogo`, `Parámetros`, `Movimientos`, `Jornadas`, `Cierre_Detalle`, `Cierres`, `Resumen`, `Stock_Calculado`.
   - Proteger la hoja `Movimientos` contra edición manual.
   - *Criterio de Aceptación:* Fórmulas de resumen funcionando correctamente.
-- [ ] **F5.2: Backend Google Apps Script (`Code.gs`)**
+- [x] **F5.2: Backend Google Apps Script (`Code.gs`)**
   - Implementar `doGet` y `doPost` con `LockService.getScriptLock()` (espera real de 10 segundos).
   - Implementar deduplicación por `id_mov` en lote.
   - Validación de PIN mediante `PropertiesService.getScriptProperties()` (sin guardar PINs en celdas de la hoja).
   - *Criterio de Aceptación:* Respuestas legibles sin preflight CORS retornando JSON estructurado.
-- [ ] **F5.3: Adaptador `SheetsAppsScriptAdapter`**
+- [x] **F5.3: Adaptador `SheetsAppsScriptAdapter`**
   - Implementar cliente HTTP en `src/adapters/SheetsAppsScriptAdapter.ts`.
   - Configurar switch dinámico entre `MockDataAdapter` y `SheetsAppsScriptAdapter` mediante `VITE_DATA_ADAPTER`.
   - *Criterio de Aceptación:* Prueba de sincronización bidireccional contra entorno DEV de Apps Script.
-- [ ] **F5.4: Batería de Pruebas de Campo Nivel C**
+- [x] **F5.4: Batería de Pruebas de Campo Nivel C**
   - Validar comportamiento con manos frías/húmedas, desconexión de red, cierre pasada la medianoche, y recarga de batería.
   - *Criterio de Aceptación:* Aprobación de la Lista de Lanzamiento (Sección 11.6 del Plan Maestro v2).
 

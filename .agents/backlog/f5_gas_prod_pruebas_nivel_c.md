@@ -6,11 +6,11 @@ Conectar el frontend local con la hoja de Google Sheets real y validar en condic
 ---
 
 ## Tareas
-- [ ] **F5.1: Estructuración de Google Sheets**
+- [x] **F5.1: Estructuración de Google Sheets**
   - Crear las 8 hojas y proteger `Movimientos`.
-- [ ] **F5.2: Despliegue de Google Apps Script (`Code.gs`)**
+- [x] **F5.2: Despliegue de Google Apps Script (`Code.gs`)**
   - Desplegar Web App con `LockService` y PIN en `ScriptProperties`.
-- [ ] **F5.3: Implementación de `SheetsAppsScriptAdapter`**
+- [x] **F5.3: Implementación de `SheetsAppsScriptAdapter`**
   - Conectar cliente HTTP con manejo de errores y reintentos.
-- [ ] **F5.4: Batería de Pruebas de Campo Nivel C**
+- [x] **F5.4: Batería de Pruebas de Campo Nivel C**
   - Pruebas con manos húmedas/frías, teléfono modesto y medianoche.

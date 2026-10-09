@@ -4,11 +4,11 @@
 - **Proyecto:** POS Paletería (Netlify + Google Sheets)
 - **Fecha de Inicio:** 8 de octubre de 2026
 - **Última Actualización:** 2026-10-09T10:42:00-06:00
-- **Fase / Sprint Activo:** **Fase 5: Google Sheets Real, Apps Script y Pruebas Nivel C** (`.agents/backlog/f5_gas_prod_pruebas_nivel_c.md`)
-- **Progreso General:** 16 / 28 tareas completadas (57.1%) — Fase 4 concluida al 100%
-- **Tarea en Curso:** Ninguna (Fase 4 concluida, listo para iniciar Tarea F5.1)
-- **Última Tarea Cerrada:** `F4.4: Pantallas de Configuración y Estado de Sincronización` (Fase 4 concluida)
-- **Siguiente Tarea Inmediata:** `F5.1: Estructura de la Hoja de Cálculo en Google Sheets`
+- **Fase / Sprint Activo:** **Fase 6: Piloto de 2 Semanas en Paralelo con Libreta** (`.agents/backlog/f6_piloto_paralelo.md`)
+- **Progreso General:** 20 / 28 tareas completadas (71.4%) — Fase 5 concluida al 100%
+- **Tarea en Curso:** Ninguna (Fase 5 concluida, listo para iniciar Tarea F6.1)
+- **Última Tarea Cerrada:** `F5.4: Batería de Pruebas de Campo Nivel C` (Fase 5 concluida)
+- **Siguiente Tarea Inmediata:** `F6.1: Despliegue en Netlify y PWA Setup`
 
 
 
