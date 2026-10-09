@@ -219,7 +219,8 @@ const AppInner: React.FC = () => {
   const go = (v: ActiveView) => () => setCurrentView(v);
 
   return (
-    <div className="min-h-screen bg-stone-100 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-amber-100/40 via-orange-50/30 to-stone-200/50 flex items-center justify-center sm:p-4">
+      <div className="w-full h-screen sm:h-[92vh] sm:max-h-[880px] max-w-md sm:rounded-[36px] sm:shadow-[0_25px_60px_-15px_rgba(217,119,6,0.18)] sm:border sm:border-white/80 sm:ring-1 sm:ring-amber-200/40 overflow-hidden bg-white flex flex-col">
       {currentView === 'mostrador' && (
         <MostradorScreen
           catalog={activeCatalog}
@@ -323,6 +324,7 @@ const AppInner: React.FC = () => {
       {import.meta.env.DEV && (
         <VisualVerifierBar currentView={currentView} onSelectScreen={(screen) => setCurrentView(screen)} />
       )}
+      </div>
     </div>
   );
 };

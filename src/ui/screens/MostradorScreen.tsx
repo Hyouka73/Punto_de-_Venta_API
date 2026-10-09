@@ -193,10 +193,11 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-screen w-full max-w-lg mx-auto bg-gradient-to-b from-amber-50/50 via-orange-50/20 to-stone-100 select-none touch-manipulation overflow-hidden">
-      {/* ─── BARRA SUPERIOR (HEADER) CON GLASSMORPHISM ─── */}
-      <header className="flex items-center justify-between px-4 py-2.5 bg-white/90 backdrop-blur-md border-b border-amber-200/50 shadow-xs shrink-0">
-        <div className="flex items-center gap-2">
+    <div className="flex flex-col h-full w-full bg-gradient-to-b from-[#FFFDF9] via-[#FEF8F0] to-[#FDF3E7] select-none touch-manipulation overflow-hidden">
+      {/* ─── BARRA SUPERIOR (HEADER BOUTIQUE) ─── */}
+      <header className="flex items-center justify-between px-3.5 py-2.5 bg-white/90 backdrop-blur-md border-b border-amber-200/60 shadow-xs shrink-0">
+        {/* Identidad de Marca & Acceso al Panel */}
+        <div className="flex items-center gap-2.5">
           <button
             type="button"
             onClick={onNavigateToPanel}
@@ -206,21 +207,26 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
           >
             <BarChart3 className="w-5 h-5" />
           </button>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1">
+          <div>
+            <div className="flex items-center gap-1.5">
+              <h1 className="font-display font-black text-stone-900 tracking-tight text-base leading-none">
+                Paletería
+              </h1>
               <span
-                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-black tracking-wide ${
+                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black tracking-wide ${
                   jornadaActiva
                     ? 'bg-emerald-100 text-emerald-800'
-                    : 'bg-stone-200/80 text-stone-600'
+                    : 'bg-stone-200 text-stone-600'
                 }`}
               >
-                {jornadaActiva ? '● Activa' : '○ Cerrada'}
+                {jornadaActiva ? '● Abierta' : '○ Cerrada'}
               </span>
+            </div>
+            <div className="flex items-center gap-1 mt-0.5">
               <span
                 data-testid="adapter-badge"
-                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                  adapterMode === 'sheets' ? 'bg-sky-100 text-sky-900 border border-sky-300' : 'bg-stone-100 text-stone-700 border border-stone-200'
+                className={`inline-flex items-center px-1.5 py-0.2 rounded-md text-[9px] font-bold ${
+                  adapterMode === 'sheets' ? 'bg-sky-100 text-sky-800 border border-sky-300' : 'bg-stone-100 text-stone-600 border border-stone-200'
                 }`}
               >
                 {adapterMode === 'sheets' ? 'Sheets' : 'Mock'}
@@ -230,63 +236,64 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
         </div>
 
         {/* Total del día prominente con CountUp de React Bits */}
-        <div className="text-right">
-          <span className="block text-[10px] font-black text-amber-700/90 uppercase tracking-widest">
-            Total Hoy
-          </span>
-          <div className="flex items-baseline justify-end gap-0.5">
-            <span className="text-xs font-black text-amber-600">$</span>
-            <CountUp
-              to={totalHoy}
-              duration={450}
-              className="text-2xl font-black text-stone-900 tracking-tight"
-            />
-            <span className="text-[10px] font-bold text-stone-400 ml-0.5">MXN</span>
+        <div className="flex items-center gap-2">
+          <div className="bg-white/95 border-2 border-amber-200/80 rounded-2xl px-3 py-1 shadow-xs text-right">
+            <span className="block text-[9px] font-black text-amber-800 uppercase tracking-widest leading-none">
+              TOTAL HOY
+            </span>
+            <div className="flex items-baseline justify-end gap-0.5 mt-0.5">
+              <span className="text-xs font-black text-amber-600">$</span>
+              <CountUp
+                to={totalHoy}
+                duration={450}
+                className="font-display text-xl font-black text-stone-900 tracking-tight"
+              />
+              <span className="text-[10px] font-bold text-stone-400 ml-0.5">MXN</span>
+            </div>
           </div>
-        </div>
 
-        {/* Indicador de Sincronización */}
-        <div>
+          {/* Botón de Sincronización */}
           {pendingSyncCount === 0 ? (
             <button
               type="button"
               onClick={onNavigateToSync}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-300/80 text-emerald-700 text-xs font-black shadow-xs cursor-pointer active:scale-95 transition-all"
-              title="Todos los movimientos guardados localmente y sincronizados"
+              className="w-9 h-9 rounded-2xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-700 shadow-xs active:scale-95 transition-all cursor-pointer"
+              title="Todos los movimientos sincronizados"
             >
-              <CloudCheck className="w-4 h-4 text-emerald-600" />
-              <span>Guardado</span>
+              <CloudCheck className="w-5 h-5 text-emerald-600" />
             </button>
           ) : (
             <button
               type="button"
               onClick={onNavigateToSync}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 hover:bg-amber-100 border border-amber-400 text-amber-900 text-xs font-black animate-pulse cursor-pointer active:scale-95 transition-all shadow-xs"
+              className="h-9 px-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100 border border-amber-400 flex items-center gap-1 text-amber-900 text-xs font-black animate-pulse shadow-xs active:scale-95 transition-all cursor-pointer"
               title={`${pendingSyncCount} movimientos en cola offline`}
             >
               <CloudAlert className="w-4 h-4 text-amber-600" />
-              <span>{pendingSyncCount} pend.</span>
+              <span>{pendingSyncCount}</span>
             </button>
           )}
         </div>
       </header>
 
-      {/* ─── CUADRÍCULA DE BOTONES TÁCTILES (todos los productos activos sin scroll) ─── */}
+      {/* ─── BANNER CUANDO NO HAY JORNADA ABIERTA ─── */}
       {!jornadaActiva && (
-        <div className="mx-3 mt-3 rounded-2xl bg-amber-50 border-2 border-amber-300 p-4 flex items-center justify-between gap-3 shrink-0">
+        <div className="mx-3 mt-3 rounded-3xl bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300/80 p-4 flex items-center justify-between gap-3 shadow-sm shrink-0">
           <div>
-            <p className="text-base font-extrabold text-amber-950">No hay jornada abierta</p>
-            <p className="text-sm text-amber-900/80">Abre la jornada para empezar a vender.</p>
+            <p className="font-display text-base font-extrabold text-amber-950">Jornada cerrada</p>
+            <p className="text-xs text-amber-900/80">Inicia el turno para registrar ventas.</p>
           </div>
           <button
             type="button"
             onClick={onNavigateToApertura}
-            className="min-h-[56px] px-5 rounded-2xl bg-stone-900 text-white font-extrabold text-base active:scale-95 transition-transform"
+            className="min-h-[50px] px-5 rounded-2xl bg-stone-900 hover:bg-stone-800 text-amber-300 font-display font-black text-sm active:scale-95 transition-all shadow-md shadow-stone-900/20"
           >
             Abrir jornada
           </button>
         </div>
       )}
+
+      {/* ─── CUADRÍCULA DE BOTONES TÁCTILES BOUTIQUE ─── */}
       <main
         className="flex-1 p-3 grid grid-cols-2 gap-2.5 overflow-hidden"
         style={{ gridAutoRows: catalog.length > 6 ? 'minmax(88px, 1fr)' : 'minmax(96px, 1fr)' }}
@@ -311,25 +318,25 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
               onPointerDown={() => handlePointerDown(item)}
               onPointerUp={() => handlePointerUp(item)}
               onPointerCancel={handlePointerCancel}
-              className={`relative flex flex-col justify-between px-3.5 py-3 rounded-3xl border-2 transition-all duration-100 text-left overflow-hidden ${
-                isPressed ? 'scale-[0.96] brightness-95 ring-4 ring-amber-400/50' : 'hover:-translate-y-0.5'
+              className={`group relative flex flex-col justify-between p-3 rounded-[26px] border-2 transition-all duration-100 text-left overflow-hidden ${
+                isPressed ? 'scale-[0.96] ring-4 ring-amber-400/50' : 'hover:-translate-y-0.5'
               } ${!jornadaActiva ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-[0.96]'}`}
               style={{
                 minHeight: '88px',
-                borderColor: `${item.color}65`,
-                background: `linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.90) 50%, ${item.color}25 100%)`,
+                borderColor: `${item.color}55`,
+                background: `linear-gradient(145deg, #FFFFFF 0%, #FFFFFF 52%, ${item.color}22 100%)`,
                 boxShadow: isPressed
                   ? 'inset 0 2px 4px rgba(0,0,0,0.06)'
-                  : `0 8px 20px -6px ${item.color}40, 0 2px 6px rgba(0,0,0,0.04)`,
+                  : `0 10px 22px -6px ${item.color}35, 0 3px 8px rgba(0,0,0,0.04)`,
               }}
             >
-              {/* Encabezado de la tarjeta: Icono + Badges */}
+              {/* Encabezado: Icono en disco pastel + Badges */}
               <div className="flex items-center justify-between w-full">
                 <div
-                  className="p-2 rounded-2xl shadow-xs border border-white"
+                  className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-xs border border-white"
                   style={{
-                    background: `linear-gradient(135deg, #FFFFFF 0%, ${item.color}25 100%)`,
-                    boxShadow: `0 3px 10px ${item.color}35`,
+                    background: `linear-gradient(135deg, #FFFFFF 0%, ${item.color}35 100%)`,
+                    boxShadow: `0 3px 10px ${item.color}30`,
                   }}
                 >
                   <ItemIcon icono={item.icono} color={item.color} className="w-6 h-6" />
@@ -337,34 +344,34 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
 
                 <div className="flex items-center gap-1">
                   {soldQty > 0 && (
-                    <span className="rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-black px-2.5 py-0.5 shadow-xs shadow-orange-500/25 animate-in zoom-in-75">
+                    <span className="rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white font-display text-xs font-black px-2.5 py-0.5 shadow-sm shadow-orange-500/30">
                       ×{soldQty}
                     </span>
                   )}
                   {item.es_combo && (
-                    <span className="rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-black px-2 py-0.5 shadow-xs">
+                    <span className="rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 shadow-xs">
                       ★ COMBO
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Título y detalles */}
-              <div className="w-full my-1">
-                <h2 className="text-base font-black tracking-tight text-stone-900 leading-tight truncate">
+              {/* Título del Producto */}
+              <div className="w-full my-0.5">
+                <h2 className="font-display font-extrabold text-base tracking-tight text-stone-900 leading-tight truncate">
                   {item.nombre.replace('Paleta de ', '')}
                 </h2>
                 {item.es_combo && item.componentes && (
-                  <p className="text-xs font-bold text-purple-900/80 leading-tight truncate">
+                  <p className="text-[11px] font-bold text-purple-900/80 leading-tight truncate mt-0.5">
                     {item.componentes.map((c) => `${c.cant ?? c.cantidad ?? 1} ${nameOf(c.id).replace('Paleta de ', '')}`).join(' + ')}
                   </p>
                 )}
               </div>
 
-              {/* Pie de tarjeta: Stock restante + Precio */}
+              {/* Pie de tarjeta: Stock restante + Precio pastilla */}
               <div className="flex items-end justify-between w-full">
                 <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-bold ${
+                  className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold ${
                     lowStock
                       ? 'bg-rose-100 text-rose-800 border border-rose-200'
                       : 'bg-white/80 text-stone-600 border border-stone-200/60'
@@ -372,7 +379,7 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
                 >
                   {left === null ? '' : `Quedan ${left}`}
                 </span>
-                <span className="px-3 py-1 rounded-xl text-lg font-black tracking-tight bg-gradient-to-r from-stone-900 to-stone-800 text-amber-300 shadow-sm border border-stone-700/60">
+                <span className="font-display font-black text-lg tracking-tight px-3 py-0.5 rounded-xl bg-stone-900 text-amber-300 shadow-xs border border-stone-800">
                   ${item.precio}
                 </span>
               </div>
@@ -411,32 +418,32 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
       )}
 
       {/* ─── BARRA INFERIOR DE NAVEGACIÓN Y OPERACIONES ─── */}
-      <footer className="grid grid-cols-3 gap-2 px-3 py-2.5 bg-white/90 backdrop-blur-md border-t border-amber-200/50 shadow-xs shrink-0">
+      <footer className="grid grid-cols-3 gap-2 px-3 py-2 bg-white/95 backdrop-blur-md border-t border-amber-200/50 shadow-xs shrink-0">
         <button
           type="button"
           onClick={onNavigateToMerma}
-          className="flex flex-col items-center justify-center p-2 rounded-2xl bg-white hover:bg-stone-50 text-stone-700 font-extrabold text-xs transition-transform active:scale-95 border border-stone-200/90 shadow-2xs cursor-pointer"
+          className="flex flex-col items-center justify-center py-2 rounded-2xl bg-white hover:bg-stone-50 text-stone-700 font-extrabold text-xs transition-transform active:scale-95 border border-stone-200/90 shadow-2xs cursor-pointer"
         >
-          <Trash2 className="w-5 h-5 text-rose-500 mb-0.5" />
+          <Trash2 className="w-4 h-4 text-rose-500 mb-0.5" />
           <span>Merma</span>
         </button>
 
         <button
           type="button"
           onClick={onNavigateToEntrada}
-          className="flex flex-col items-center justify-center p-2 rounded-2xl bg-white hover:bg-stone-50 text-stone-700 font-extrabold text-xs transition-transform active:scale-95 border border-stone-200/90 shadow-2xs cursor-pointer"
+          className="flex flex-col items-center justify-center py-2 rounded-2xl bg-white hover:bg-stone-50 text-stone-700 font-extrabold text-xs transition-transform active:scale-95 border border-stone-200/90 shadow-2xs cursor-pointer"
         >
-          <PackagePlus className="w-5 h-5 text-sky-600 mb-0.5" />
+          <PackagePlus className="w-4 h-4 text-sky-600 mb-0.5" />
           <span>Entrada</span>
         </button>
 
         <button
           type="button"
           onClick={onNavigateToCierre}
-          className="flex flex-col items-center justify-center p-2 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 text-amber-950 font-extrabold text-xs transition-transform active:scale-95 border border-amber-300/80 shadow-2xs cursor-pointer"
+          className="flex flex-col items-center justify-center py-2 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 text-amber-950 font-extrabold text-xs transition-transform active:scale-95 border border-amber-300/80 shadow-2xs cursor-pointer"
         >
           <div className="flex items-center gap-1 mb-0.5">
-            <Lock className="w-4 h-4 text-amber-700" />
+            <Lock className="w-3.5 h-3.5 text-amber-700" />
           </div>
           <span>Cierre</span>
         </button>
