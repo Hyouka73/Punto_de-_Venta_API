@@ -1,4 +1,2 @@
-/**
- * Capa de Infraestructura (IndexedDB, SyncWorker, Hardware/Haptics)
- */
-export {};
+export * from './offline/OfflineQueue';
+export * from './offline/SyncWorker';

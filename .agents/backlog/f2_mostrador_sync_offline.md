@@ -10,8 +10,8 @@ Construir la pantalla principal de mostrador (usando Google Stitch) y la cola de
   - Usar la skill `stitch-screen-generation` para generar el Mostrador.
   - Implementar `src/ui/screens/MostradorScreen.tsx`.
   - Integrar eventos táctiles inmediatos, vibración háptica de 50ms y barra Deshacer de 10s.
-- [ ] **F2.2: Cola Offline con IndexedDB (`idb`)**
+- [x] **F2.2: Cola Offline con IndexedDB (`idb`)**
   - Implementar `src/infrastructure/offline/OfflineQueue.ts` con UUID v4 en cliente.
-- [ ] **F2.3: Sincronizador Monohilo con Backoff Exponencial**
+- [x] **F2.3: Sincronizador Monohilo con Backoff Exponencial**
   - Implementar `src/infrastructure/offline/SyncWorker.ts`.
   - Ejecutar pruebas de **Nivel B** (resiliencia offline y desduplicación).

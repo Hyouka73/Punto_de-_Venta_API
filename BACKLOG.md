@@ -48,11 +48,11 @@
   - Ejecutar el prompt de Stitch para la pantalla Mostrador (botones táctiles >80px por categoría, feedback visual, selector de cantidad rápida, barra de deshacer 10s, total del día e indicador grande de sincronización).
   - Convertir diseño de Stitch a componente `src/ui/screens/MostradorScreen.tsx`.
   - *Criterio de Aceptación:* Cumplimiento del presupuesto de rendimiento (<100ms de respuesta, cero lag táctil, feedback háptico en Android).
-- [ ] **F2.2: Cola Offline con IndexedDB (`idb`) e Idempotencia**
+- [x] **F2.2: Cola Offline con IndexedDB (`idb`) e Idempotencia**
   - Implementar almacén `src/infrastructure/offline/OfflineQueue.ts` usando IndexedDB.
   - Generación de `id_mov` con UUID v4 en el cliente al momento exacto del toque.
   - *Criterio de Aceptación:* Persistencia de movimientos tras cerrar pestaña o apagar conexión.
-- [ ] **F2.3: Sincronizador Monohilo (Single Mutex Worker) con Backoff Exponencial**
+- [x] **F2.3: Sincronizador Monohilo (Single Mutex Worker) con Backoff Exponencial**
   - Implementar `src/infrastructure/offline/SyncWorker.ts`: asegura un único proceso de envío en lote concurrente.
   - Retiro de la cola únicamente tras confirmación explícita del ID por el servidor.
   - *Criterio de Aceptación:* Pruebas de **Nivel B** (1 hora sin red con 20 ventas, reconexión automática sin duplicados).

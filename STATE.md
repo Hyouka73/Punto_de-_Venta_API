@@ -3,12 +3,12 @@
 ## 📌 Metadatos de Control de Ejecución
 - **Proyecto:** POS Paletería (Netlify + Google Sheets)
 - **Fecha de Inicio:** 8 de octubre de 2026
-- **Última Actualización:** 2026-10-08T17:03:00-06:00
-- **Fase / Sprint Activo:** **Fase 2: Pantalla Mostrador y Cola de Sincronización Offline** (`.agents/backlog/f2_mostrador_sync_offline.md`)
-- **Progreso General:** 7 / 28 tareas completadas (25.0%)
-- **Tarea en Curso:** Ninguna (Listo para iniciar Tarea F2.2)
-- **Última Tarea Cerrada:** `F2.1: Diseño y Construcción de Pantalla Mostrador con Google Stitch`
-- **Siguiente Tarea Inmediata:** `F2.2: Cola Offline con IndexedDB (idb) e Idempotencia`
+- **Última Actualización:** 2026-10-08T18:02:00-06:00
+- **Fase / Sprint Activo:** **Fase 3: Apertura, Cierre Guiado, Mermas y Entradas** (`.agents/backlog/f3_apertura_cierre_movimientos.md`)
+- **Progreso General:** 9 / 28 tareas completadas (32.1%) — Sprint F2 concluido al 100%
+- **Tarea en Curso:** Ninguna (Listo para iniciar Tarea F3.1)
+- **Última Tarea Cerrada:** `F2.3: Sincronizador Monohilo (Single Mutex Worker) con Backoff Exponencial` (Fase 2 concluida)
+- **Siguiente Tarea Inmediata:** `F3.1: Pantalla de Apertura de Jornada con Stitch`
 
 ---
 
