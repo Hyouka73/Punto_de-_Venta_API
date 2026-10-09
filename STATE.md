@@ -3,12 +3,12 @@
 ## 📌 Metadatos de Control de Ejecución
 - **Proyecto:** POS Paletería (Netlify + Google Sheets)
 - **Fecha de Inicio:** 8 de octubre de 2026
-- **Última Actualización:** 2026-10-09T10:42:00-06:00
+- **Última Actualización:** 2026-10-09T11:15:00-06:00
 - **Fase / Sprint Activo:** **Fase 6: Piloto de 2 Semanas en Paralelo con Libreta** (`.agents/backlog/f6_piloto_paralelo.md`)
-- **Progreso General:** 20 / 28 tareas completadas (71.4%) — Fase 5 concluida al 100%
-- **Tarea en Curso:** Ninguna (Fase 5 concluida, listo para iniciar Tarea F6.1)
-- **Última Tarea Cerrada:** `F5.4: Batería de Pruebas de Campo Nivel C` (Fase 5 concluida)
-- **Siguiente Tarea Inmediata:** `F6.1: Despliegue en Netlify y PWA Setup`
+- **Progreso General:** 21 / 28 tareas completadas (75.0%)
+- **Tarea en Curso:** Ninguna (F6.1 concluida, lista para iniciar F6.2)
+- **Última Tarea Cerrada:** `F6.1: Despliegue en Netlify y PWA Setup`
+- **Siguiente Tarea Inmediata:** `F6.2: Ejecución del Piloto Paralelo (Semana 1 Asistida, Semana 2 Autónoma)`
 
 
 

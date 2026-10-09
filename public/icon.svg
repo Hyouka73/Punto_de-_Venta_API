@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+    <linearGradient id="popsicleGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FB7185"/>
+      <stop offset="50%" stop-color="#F43F5E"/>
+      <stop offset="100%" stop-color="#E11D48"/>
+    </linearGradient>
+    <linearGradient id="stickGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#0F172A" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- Background rounded rect -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+
+  <!-- Stick -->
+  <path d="M228 320 L228 410 C228 425.46 240.54 438 256 438 C271.46 438 284 425.46 284 410 L284 320 Z" fill="url(#stickGrad)" filter="url(#shadow)"/>
+
+  <!-- Popsicle Body -->
+  <g filter="url(#shadow)">
+    <!-- Main Arch Shape -->
+    <path d="M176 160 C176 115.82 211.82 80 256 80 C300.18 80 336 115.82 336 160 L336 312 C336 325.25 325.25 336 312 336 L200 336 C186.75 336 176 325.25 176 312 Z" fill="url(#popsicleGrad)"/>
+    
+    <!-- Highlights & Shine -->
+    <path d="M204 150 C204 125 220 106 240 102 C230 102 210 115 204 150 Z" fill="#FFFFFF" opacity="0.45"/>
+    <rect x="204" y="165" width="14" height="120" rx="7" fill="#FFFFFF" opacity="0.35"/>
+
+    <!-- Popsicle Grooves -->
+    <line x1="230" y1="130" x2="230" y2="295" stroke="#9F1239" stroke-width="6" stroke-linecap="round" opacity="0.4"/>
+    <line x1="282" y1="130" x2="282" y2="295" stroke="#9F1239" stroke-width="6" stroke-linecap="round" opacity="0.4"/>
+  </g>
+
+  <!-- Decorative sparkles -->
+  <circle cx="130" cy="120" r="12" fill="#FEF08A" opacity="0.9"/>
+  <circle cx="380" cy="140" r="16" fill="#FEF08A" opacity="0.9"/>
+  <circle cx="360" cy="380" r="10" fill="#FEF08A" opacity="0.8"/>
+</svg>

@@ -116,9 +116,9 @@
 ---
 
 ## FASE 6: PILOTO DE 2 SEMANAS EN PARALELO CON LIBRETA (Sprint F6)
-- [ ] **F6.1: Despliegue en Netlify y PWA Setup**
+- [x] **F6.1: Despliegue en Netlify y PWA Setup**
   - Desplegar frontend estático en Netlify bajo subdominio con HTTPS.
-  - Instalación de PWA en teléfono de mostrador y teléfono de supervisora.
+  - Instalación de PWA en teléfono de mostrador y teléfono de supervisora (`docs/GUIA_PILOTO_PARALELO.md`).
   - *Criterio de Aceptación:* Icono en pantalla de inicio y ejecución a pantalla completa en modo offline.
 - [ ] **F6.2: Ejecución del Piloto Paralelo (Semana 1 Asistida, Semana 2 Autónoma)**
   - Seguimiento diario de las 4 hipótesis y recolección de métricas.
