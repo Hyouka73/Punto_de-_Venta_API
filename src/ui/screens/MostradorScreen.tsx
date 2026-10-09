@@ -14,7 +14,7 @@ import {
   Plus,
   Minus,
   X,
-  ShoppingBag,
+  BarChart3,
 } from 'lucide-react';
 import type { CatalogoItem } from '@/domain/config/types';
 import { DEFAULT_CATALOG } from '@/domain/config/defaultCatalog';
@@ -38,6 +38,8 @@ export interface MostradorScreenProps {
   readonly onNavigateToMerma?: () => void;
   readonly onNavigateToEntrada?: () => void;
   readonly onNavigateToCierre?: () => void;
+  readonly onNavigateToPanel?: () => void;
+  readonly onNavigateToSync?: () => void;
 }
 
 /**
@@ -61,6 +63,8 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
   onNavigateToMerma,
   onNavigateToEntrada,
   onNavigateToCierre,
+  onNavigateToPanel,
+  onNavigateToSync,
 }) => {
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const [recentSale, setRecentSale] = useState<RecentSale | null>(null);
@@ -190,9 +194,15 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
       {/* ─── BARRA SUPERIOR (HEADER) ─── */}
       <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-stone-200/80 shadow-sm shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 shadow-inner">
-            <ShoppingBag className="w-5 h-5" />
-          </div>
+          <button
+            type="button"
+            onClick={onNavigateToPanel}
+            className="w-9 h-9 rounded-full bg-amber-100 hover:bg-amber-200 flex items-center justify-center text-amber-700 shadow-inner transition-transform active:scale-95 cursor-pointer"
+            title="Abrir Panel Ejecutivo"
+            aria-label="Abrir Panel Ejecutivo"
+          >
+            <BarChart3 className="w-5 h-5" />
+          </button>
           <div>
             <span
               className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
@@ -219,21 +229,25 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
         {/* Indicador de Sincronización */}
         <div>
           {pendingSyncCount === 0 ? (
-            <div
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold shadow-xs"
+            <button
+              type="button"
+              onClick={onNavigateToSync}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-bold shadow-xs cursor-pointer active:scale-95"
               title="Todos los movimientos guardados localmente y sincronizados"
             >
               <CloudCheck className="w-4 h-4 text-emerald-600" />
               <span>Guardado</span>
-            </div>
+            </button>
           ) : (
-            <div
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 border border-amber-300 text-amber-800 text-xs font-bold animate-pulse"
+            <button
+              type="button"
+              onClick={onNavigateToSync}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-800 text-xs font-bold animate-pulse cursor-pointer active:scale-95"
               title={`${pendingSyncCount} movimientos en cola offline`}
             >
               <CloudAlert className="w-4 h-4 text-amber-600" />
               <span>{pendingSyncCount} pend.</span>
-            </div>
+            </button>
           )}
         </div>
       </header>

@@ -78,18 +78,18 @@
 ---
 
 ## FASE 4: PANEL EJECUTIVO, LABORATORIO VISUAL Y REACT BITS (Sprint F4)
-- [ ] **F4.1: Pantalla Panel Ejecutivo con Lazy Loading**
+- [x] **F4.1: Pantalla Panel Ejecutivo con Lazy Loading**
   - Diseñar e implementar `src/ui/screens/PanelScreen.tsx` (métricas de hoy, semana, % reconstruido, diferencia acumulada).
   - Separación de bundle con `React.lazy()` y `Suspense` para proteger la carga ligera del Mostrador.
   - *Criterio de Aceptación:* Tamaño de bundle del Mostrador no incrementa por dependencias del Panel.
-- [ ] **F4.2: Integración de Componentes React Bits con Presupuesto de Rendimiento**
+- [x] **F4.2: Integración de Componentes React Bits con Presupuesto de Rendimiento**
   - Integrar efectos sutiles en Panel: tarjetas con spotlight, conteos numéricos suaves, fondo aurora atenuado.
   - Verificar que se respete la preferencia `prefers-reduced-motion` del sistema operativo.
   - *Criterio de Aceptación:* 60 FPS estables medidos en emulador de teléfono modesto.
-- [ ] **F4.3: Laboratorio Visual de Desarrollo**
+- [x] **F4.3: Laboratorio Visual de Desarrollo**
   - Implementar pantalla oculta `src/ui/screens/LaboratorioScreen.tsx` accesible solo en entorno DEV.
   - *Criterio de Aceptación:* Desactivación garantizada en build de producción (`import.meta.env.PROD`).
-- [ ] **F4.4: Pantallas de Configuración y Estado de Sincronización**
+- [x] **F4.4: Pantallas de Configuración y Estado de Sincronización**
   - Diseñar e implementar `src/ui/screens/ConfiguracionScreen.tsx` (catálogo, precios, combos, PINs) y `src/ui/screens/SyncStatusScreen.tsx`.
   - *Criterio de Aceptación:* Acceso a configuración bloqueado sin PIN de administrador.
 

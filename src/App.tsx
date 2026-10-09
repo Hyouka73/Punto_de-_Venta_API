@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import {
   MostradorScreen,
   AperturaScreen,
@@ -10,7 +10,21 @@ import { DEFAULT_CATALOG } from './domain/config/defaultCatalog';
 import type { CatalogoItem, MotivoMermaId } from './domain/config/types';
 import type { Movimiento } from './domain/types';
 
-type ActiveView = 'mostrador' | 'apertura' | 'cierre' | 'merma' | 'entrada';
+const PanelScreen = lazy(() => import('./ui/screens/PanelScreen'));
+const SyncStatusScreen = lazy(() => import('./ui/screens/SyncStatusScreen'));
+const ConfiguracionScreen = lazy(() => import('./ui/screens/ConfiguracionScreen'));
+const LaboratorioScreen = lazy(() => import('./ui/screens/LaboratorioScreen'));
+
+type ActiveView =
+  | 'mostrador'
+  | 'apertura'
+  | 'cierre'
+  | 'merma'
+  | 'entrada'
+  | 'panel'
+  | 'sync'
+  | 'config'
+  | 'laboratorio';
 
 export const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ActiveView>('mostrador');
@@ -181,7 +195,72 @@ export const App: React.FC = () => {
           onNavigateToMerma={() => setCurrentView('merma')}
           onNavigateToEntrada={() => setCurrentView('entrada')}
           onNavigateToCierre={() => setCurrentView('cierre')}
+          onNavigateToPanel={() => setCurrentView('panel')}
+          onNavigateToSync={() => setCurrentView('sync')}
         />
+      )}
+
+      {currentView === 'panel' && (
+        <Suspense
+          fallback={
+            <div className="flex h-screen w-full items-center justify-center bg-stone-50">
+              <div className="flex flex-col items-center gap-2">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-500 border-t-transparent" />
+                <span className="text-xs font-bold text-stone-500">Cargando Panel Ejecutivo...</span>
+              </div>
+            </div>
+          }
+        >
+          <PanelScreen
+            movimientos={movimientos}
+            catalog={DEFAULT_CATALOG}
+            onBackToMostrador={() => setCurrentView('mostrador')}
+            onNavigateToConfig={() => setCurrentView('config')}
+          />
+        </Suspense>
+      )}
+
+      {currentView === 'sync' && (
+        <Suspense
+          fallback={
+            <div className="flex h-screen w-full items-center justify-center bg-stone-50">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-500 border-t-transparent" />
+            </div>
+          }
+        >
+          <SyncStatusScreen
+            status={{
+              isOnline: true,
+              isSyncing: false,
+              pendingCount: 0,
+            }}
+            onBack={() => setCurrentView('mostrador')}
+          />
+        </Suspense>
+      )}
+
+      {currentView === 'config' && (
+        <Suspense
+          fallback={
+            <div className="flex h-screen w-full items-center justify-center bg-stone-50">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-500 border-t-transparent" />
+            </div>
+          }
+        >
+          <ConfiguracionScreen onBack={() => setCurrentView('panel')} />
+        </Suspense>
+      )}
+
+      {currentView === 'laboratorio' && (
+        <Suspense
+          fallback={
+            <div className="flex h-screen w-full items-center justify-center bg-stone-50">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-500 border-t-transparent" />
+            </div>
+          }
+        >
+          <LaboratorioScreen onBack={() => setCurrentView('mostrador')} />
+        </Suspense>
       )}
 
       {currentView === 'apertura' && (

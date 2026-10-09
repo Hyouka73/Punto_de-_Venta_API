@@ -23,7 +23,7 @@ export interface AppConfig {
  */
 function getRawEnvValue(key: string): string | undefined {
   if (typeof import.meta !== 'undefined' && import.meta.env) {
-    const val = (import.meta.env as Record<string, string | undefined>)[key];
+    const val = (import.meta.env as unknown as Record<string, string | undefined>)[key];
     if (val !== undefined && val !== '') return val;
   }
   const globalProcess = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process;
