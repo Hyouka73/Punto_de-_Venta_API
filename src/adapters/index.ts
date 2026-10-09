@@ -25,7 +25,7 @@ export function createDataAdapter(
   }
   const type = overrideType || (stored as DataAdapterType | null) || ENV.dataAdapter;
   if (type === 'sheets') {
-    const url = webappUrl || storedUrl || undefined;
+    const url = webappUrl || storedUrl || ENV.sheetsWebappUrl || undefined;
     return url ? new SheetsAppsScriptAdapter({ webappUrl: url }) : new SheetsAppsScriptAdapter();
   }
   return new MockDataAdapter();

@@ -14,6 +14,7 @@ import {
 import type { CatalogoItem } from '@/domain/config/types';
 import { triggerHaptic } from '../utils/haptics';
 import { ItemIcon } from '../utils/itemIcons';
+import { CountUp } from '../components/react-bits/CountUp';
 
 export interface RecentSale {
   readonly id: string;
@@ -192,48 +193,56 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-screen w-full max-w-lg mx-auto bg-paleteria-bg select-none touch-manipulation overflow-hidden">
-      {/* ─── BARRA SUPERIOR (HEADER) ─── */}
-      <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-stone-200/80 shadow-sm shrink-0">
+    <div className="flex flex-col h-screen w-full max-w-lg mx-auto bg-gradient-to-b from-amber-50/50 via-orange-50/20 to-stone-100 select-none touch-manipulation overflow-hidden">
+      {/* ─── BARRA SUPERIOR (HEADER) CON GLASSMORPHISM ─── */}
+      <header className="flex items-center justify-between px-4 py-2.5 bg-white/90 backdrop-blur-md border-b border-amber-200/50 shadow-xs shrink-0">
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onNavigateToPanel}
-            className="w-9 h-9 rounded-full bg-amber-100 hover:bg-amber-200 flex items-center justify-center text-amber-700 shadow-inner transition-transform active:scale-95 cursor-pointer"
+            className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 flex items-center justify-center text-white shadow-sm shadow-orange-500/25 transition-transform active:scale-95 cursor-pointer"
             title="Abrir Panel Ejecutivo"
             aria-label="Abrir Panel Ejecutivo"
           >
             <BarChart3 className="w-5 h-5" />
           </button>
-          <div>
-            <span
-              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
-                jornadaActiva
-                  ? 'bg-emerald-100 text-emerald-800'
-                  : 'bg-stone-100 text-stone-600'
-              }`}
-            >
-              {jornadaActiva ? '● Jornada Activa' : '○ Cerrada'}
-            </span>
-            <span
-              data-testid="adapter-badge"
-              className={`ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
-                adapterMode === 'sheets' ? 'bg-sky-100 text-sky-900' : 'bg-stone-200 text-stone-700'
-              }`}
-            >
-              {adapterMode === 'sheets' ? 'Sheets' : 'Mock'}
-            </span>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1">
+              <span
+                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-black tracking-wide ${
+                  jornadaActiva
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : 'bg-stone-200/80 text-stone-600'
+                }`}
+              >
+                {jornadaActiva ? '● Activa' : '○ Cerrada'}
+              </span>
+              <span
+                data-testid="adapter-badge"
+                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                  adapterMode === 'sheets' ? 'bg-sky-100 text-sky-900 border border-sky-300' : 'bg-stone-100 text-stone-700 border border-stone-200'
+                }`}
+              >
+                {adapterMode === 'sheets' ? 'Sheets' : 'Mock'}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Total del día prominente */}
+        {/* Total del día prominente con CountUp de React Bits */}
         <div className="text-right">
-          <span className="block text-sm font-semibold text-stone-500 uppercase tracking-wider">
+          <span className="block text-[10px] font-black text-amber-700/90 uppercase tracking-widest">
             Total Hoy
           </span>
-          <span className="text-xl font-extrabold text-stone-900 tracking-tight">
-            ${totalHoy.toLocaleString('es-MX')} <span className="text-xs font-bold text-stone-500">MXN</span>
-          </span>
+          <div className="flex items-baseline justify-end gap-0.5">
+            <span className="text-xs font-black text-amber-600">$</span>
+            <CountUp
+              to={totalHoy}
+              duration={450}
+              className="text-2xl font-black text-stone-900 tracking-tight"
+            />
+            <span className="text-[10px] font-bold text-stone-400 ml-0.5">MXN</span>
+          </div>
         </div>
 
         {/* Indicador de Sincronización */}
@@ -242,7 +251,7 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
             <button
               type="button"
               onClick={onNavigateToSync}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-bold shadow-xs cursor-pointer active:scale-95"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-300/80 text-emerald-700 text-xs font-black shadow-xs cursor-pointer active:scale-95 transition-all"
               title="Todos los movimientos guardados localmente y sincronizados"
             >
               <CloudCheck className="w-4 h-4 text-emerald-600" />
@@ -252,7 +261,7 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
             <button
               type="button"
               onClick={onNavigateToSync}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-800 text-xs font-bold animate-pulse cursor-pointer active:scale-95"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 hover:bg-amber-100 border border-amber-400 text-amber-900 text-xs font-black animate-pulse cursor-pointer active:scale-95 transition-all shadow-xs"
               title={`${pendingSyncCount} movimientos en cola offline`}
             >
               <CloudAlert className="w-4 h-4 text-amber-600" />
@@ -302,49 +311,68 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
               onPointerDown={() => handlePointerDown(item)}
               onPointerUp={() => handlePointerUp(item)}
               onPointerCancel={handlePointerCancel}
-              className={`relative flex flex-col justify-between px-3 py-2.5 rounded-counter border-2 shadow-sm transition-transform duration-75 active:shadow-inner bg-white text-left ${
-                isPressed ? 'scale-[0.96] brightness-95 ring-4 ring-amber-300/60' : ''
+              className={`relative flex flex-col justify-between px-3.5 py-3 rounded-3xl border-2 transition-all duration-100 text-left overflow-hidden ${
+                isPressed ? 'scale-[0.96] brightness-95 ring-4 ring-amber-400/50' : 'hover:-translate-y-0.5'
               } ${!jornadaActiva ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-[0.96]'}`}
               style={{
                 minHeight: '88px',
-                borderColor: item.color,
-                backgroundColor: `${item.color}22`,
+                borderColor: `${item.color}65`,
+                background: `linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.90) 50%, ${item.color}25 100%)`,
+                boxShadow: isPressed
+                  ? 'inset 0 2px 4px rgba(0,0,0,0.06)'
+                  : `0 8px 20px -6px ${item.color}40, 0 2px 6px rgba(0,0,0,0.04)`,
               }}
             >
+              {/* Encabezado de la tarjeta: Icono + Badges */}
               <div className="flex items-center justify-between w-full">
-                <div className="p-1.5 rounded-xl bg-white/85 shadow-xs">
-                  <ItemIcon icono={item.icono} color={item.color} className="w-7 h-7" />
+                <div
+                  className="p-2 rounded-2xl shadow-xs border border-white"
+                  style={{
+                    background: `linear-gradient(135deg, #FFFFFF 0%, ${item.color}25 100%)`,
+                    boxShadow: `0 3px 10px ${item.color}35`,
+                  }}
+                >
+                  <ItemIcon icono={item.icono} color={item.color} className="w-6 h-6" />
                 </div>
-                {soldQty > 0 && (
-                  <span className="rounded-full bg-stone-900 text-white text-sm font-black px-2.5 py-0.5">
-                    ×{soldQty}
-                  </span>
-                )}
-                {item.es_combo && soldQty === 0 && (
-                  <span className="rounded-full bg-purple-700 text-white text-xs font-black px-2 py-0.5">
-                    ★ COMBO
-                  </span>
-                )}
+
+                <div className="flex items-center gap-1">
+                  {soldQty > 0 && (
+                    <span className="rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-black px-2.5 py-0.5 shadow-xs shadow-orange-500/25 animate-in zoom-in-75">
+                      ×{soldQty}
+                    </span>
+                  )}
+                  {item.es_combo && (
+                    <span className="rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-black px-2 py-0.5 shadow-xs">
+                      ★ COMBO
+                    </span>
+                  )}
+                </div>
               </div>
 
-              <div className="w-full">
-                <h2 className="text-lg font-extrabold tracking-tight text-stone-900 leading-tight truncate">
+              {/* Título y detalles */}
+              <div className="w-full my-1">
+                <h2 className="text-base font-black tracking-tight text-stone-900 leading-tight truncate">
                   {item.nombre.replace('Paleta de ', '')}
                 </h2>
                 {item.es_combo && item.componentes && (
-                  <p className="text-sm font-semibold text-purple-800 leading-tight truncate">
+                  <p className="text-xs font-bold text-purple-900/80 leading-tight truncate">
                     {item.componentes.map((c) => `${c.cant ?? c.cantidad ?? 1} ${nameOf(c.id).replace('Paleta de ', '')}`).join(' + ')}
                   </p>
                 )}
               </div>
 
+              {/* Pie de tarjeta: Stock restante + Precio */}
               <div className="flex items-end justify-between w-full">
                 <span
-                  className={`text-sm font-bold ${lowStock ? 'text-rose-700' : 'text-stone-600'}`}
+                  className={`inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-bold ${
+                    lowStock
+                      ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                      : 'bg-white/80 text-stone-600 border border-stone-200/60'
+                  }`}
                 >
                   {left === null ? '' : `Quedan ${left}`}
                 </span>
-                <span className="px-2.5 py-0.5 rounded-xl text-xl font-black tracking-tight bg-stone-900 text-white">
+                <span className="px-3 py-1 rounded-xl text-lg font-black tracking-tight bg-gradient-to-r from-stone-900 to-stone-800 text-amber-300 shadow-sm border border-stone-700/60">
                   ${item.precio}
                 </span>
               </div>
@@ -356,11 +384,11 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
       {/* ─── BARRA FLOTANTE DE DESHACER (10 SEGUNDOS) ─── */}
       {recentSale && (
         <div className="px-3 pb-2 transition-transform duration-150 animate-bounce-short">
-          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-stone-900 text-white shadow-xl border border-stone-800">
+          <div className="flex items-center justify-between p-3.5 rounded-2xl bg-stone-900/95 backdrop-blur-md text-white shadow-2xl border border-stone-700/70">
             <div className="flex items-center gap-2.5 overflow-hidden">
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0 animate-ping" />
               <div className="truncate">
-                <span className="text-xs font-semibold text-stone-300 block">
+                <span className="text-[11px] font-semibold text-stone-300 block">
                   Venta registrada:
                 </span>
                 <span className="text-sm font-extrabold text-white truncate">
@@ -373,7 +401,7 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
             <button
               type="button"
               onClick={handleUndo}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-black text-xs uppercase tracking-wider shadow-sm transition-transform active:scale-95 shrink-0"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-950 font-black text-xs uppercase tracking-wider shadow-sm transition-transform active:scale-95 shrink-0"
             >
               <RotateCcw className="w-4 h-4" />
               <span>Deshacer ({undoSecondsLeft}s)</span>
@@ -383,29 +411,29 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
       )}
 
       {/* ─── BARRA INFERIOR DE NAVEGACIÓN Y OPERACIONES ─── */}
-      <footer className="grid grid-cols-3 gap-2 px-3 py-2.5 bg-white border-t border-stone-200 shrink-0">
+      <footer className="grid grid-cols-3 gap-2 px-3 py-2.5 bg-white/90 backdrop-blur-md border-t border-amber-200/50 shadow-xs shrink-0">
         <button
           type="button"
           onClick={onNavigateToMerma}
-          className="flex flex-col items-center justify-center p-2 rounded-2xl bg-stone-100 hover:bg-stone-200/80 text-stone-700 font-bold text-xs transition-transform active:scale-95 border border-stone-200"
+          className="flex flex-col items-center justify-center p-2 rounded-2xl bg-white hover:bg-stone-50 text-stone-700 font-extrabold text-xs transition-transform active:scale-95 border border-stone-200/90 shadow-2xs cursor-pointer"
         >
-          <Trash2 className="w-5 h-5 text-stone-600 mb-0.5" />
+          <Trash2 className="w-5 h-5 text-rose-500 mb-0.5" />
           <span>Merma</span>
         </button>
 
         <button
           type="button"
           onClick={onNavigateToEntrada}
-          className="flex flex-col items-center justify-center p-2 rounded-2xl bg-stone-100 hover:bg-stone-200/80 text-stone-700 font-bold text-xs transition-transform active:scale-95 border border-stone-200"
+          className="flex flex-col items-center justify-center p-2 rounded-2xl bg-white hover:bg-stone-50 text-stone-700 font-extrabold text-xs transition-transform active:scale-95 border border-stone-200/90 shadow-2xs cursor-pointer"
         >
-          <PackagePlus className="w-5 h-5 text-stone-600 mb-0.5" />
+          <PackagePlus className="w-5 h-5 text-sky-600 mb-0.5" />
           <span>Entrada</span>
         </button>
 
         <button
           type="button"
           onClick={onNavigateToCierre}
-          className="flex flex-col items-center justify-center p-2 rounded-2xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs transition-transform active:scale-95 border border-amber-200"
+          className="flex flex-col items-center justify-center p-2 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 text-amber-950 font-extrabold text-xs transition-transform active:scale-95 border border-amber-300/80 shadow-2xs cursor-pointer"
         >
           <div className="flex items-center gap-1 mb-0.5">
             <Lock className="w-4 h-4 text-amber-700" />
