@@ -60,17 +60,17 @@
 ---
 
 ## FASE 3: APERTURA, CIERRE GUIADO, MERMAS Y ENTRADAS (Sprint F3)
-- [ ] **F3.1: Pantalla de Apertura de Jornada con Stitch**
+- [x] **F3.1: Pantalla de Apertura de Jornada con Stitch**
   - Diseñar e implementar `src/ui/screens/AperturaScreen.tsx`: conteo precargado del cierre anterior + entradas nocturnas, campo de fondo inicial de caja, confirmación con PIN de supervisora.
   - *Criterio de Aceptación:* Flujo de apertura completado en menos de 60 segundos.
-- [ ] **F3.2: Pantalla de Cierre Guiado en 4 Pasos con Stitch**
+- [x] **F3.2: Pantalla de Cierre Guiado en 4 Pasos con Stitch**
   - Diseñar e implementar `src/ui/screens/CierreScreen.tsx`:
     - Paso 1: Conteo físico de restantes por categoría.
     - Paso 2: Conteo de efectivo en caja.
     - Paso 3: Revisión de resultados (3 cuadres, semáforo, propuesta de reconstrucción).
     - Paso 4: Confirmación con PIN y celebración animada.
   - *Criterio de Aceptación:* Paso exitoso de los **10 Escenarios de Cierre** del Plan Maestro v2.
-- [ ] **F3.3: Pantallas de Registro Rápido: Merma y Entrada de Producto**
+- [x] **F3.3: Pantallas de Registro Rápido: Merma y Entrada de Producto**
   - Diseñar e implementar `src/ui/screens/MermaScreen.tsx` (3 botones gigantes: palo roto, descongelada, consumo casa).
   - Diseñar e implementar `src/ui/screens/EntradaScreen.tsx` (cantidades recibidas por categoría).
   - *Criterio de Aceptación:* Registro de merma o entrada en menos de 3 toques.

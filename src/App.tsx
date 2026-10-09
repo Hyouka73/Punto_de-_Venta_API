@@ -1,42 +1,228 @@
 import React, { useState } from 'react';
-import { MostradorScreen } from './ui/screens/MostradorScreen';
+import {
+  MostradorScreen,
+  AperturaScreen,
+  CierreScreen,
+  MermaScreen,
+  EntradaScreen,
+} from './ui';
 import { DEFAULT_CATALOG } from './domain/config/defaultCatalog';
-import type { CatalogoItem } from './domain/config/types';
+import type { CatalogoItem, MotivoMermaId } from './domain/config/types';
+import type { Movimiento } from './domain/types';
+
+type ActiveView = 'mostrador' | 'apertura' | 'cierre' | 'merma' | 'entrada';
 
 export const App: React.FC = () => {
+  const [currentView, setCurrentView] = useState<ActiveView>('mostrador');
+  const [jornadaActiva, setJornadaActiva] = useState<boolean>(true);
+  const [jornadaId, setJornadaId] = useState<string>('JOR-2026-10-09-001');
+  const [fondoInicial, setFondoInicial] = useState<number>(200);
+  const [inventarioInicial, setInventarioInicial] = useState<Record<string, number>>({
+    CAT_AGUA: 45,
+    CAT_CREMA: 38,
+    CAT_SANDWICH: 14,
+    CAT_NIEVE: 10,
+  });
+  const [movimientos, setMovimientos] = useState<Movimiento[]>([]);
+  const [entradasAcumuladas, setEntradasAcumuladas] = useState<Record<string, number>>({});
+  const [mermasAcumuladas, setMermasAcumuladas] = useState<Record<string, number>>({});
   const [totalHoy, setTotalHoy] = useState<number>(0);
-  const [salesHistory, setSalesHistory] = useState<Array<{ id: string; monto: number }>>([]);
 
+  // Registro de Venta desde Mostrador
   const handleRegisterSale = (item: CatalogoItem, cantidad: number) => {
-    const saleId = `sale-${Date.now()}`;
+    const saleId = `mov-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
     const monto = item.precio * cantidad;
 
+    const nuevoMov: Movimiento = {
+      id_mov: saleId,
+      jornada_id: jornadaId,
+      tipo: 'VENTA',
+      categoria_id: item.id,
+      cantidad,
+      precio_unitario: item.precio,
+      monto_total: monto,
+      metodo_pago: 'EFECTIVO',
+      usuario: 'mostrador',
+      dispositivo_id: 'disp-local',
+      ts_cliente: new Date().toISOString(),
+      estado_sincronizacion: 'CONFIRMADO',
+    };
+
     setTotalHoy((prev) => prev + monto);
-    setSalesHistory((prev) => [...prev, { id: saleId, monto }]);
+    setMovimientos((prev) => [...prev, nuevoMov]);
     return saleId;
   };
 
+  // Deshacer Venta desde Mostrador
   const handleUndoSale = (saleId: string) => {
-    const sale = salesHistory.find((s) => s.id === saleId);
+    const sale = movimientos.find((m) => m.id_mov === saleId);
     if (sale) {
-      setTotalHoy((prev) => Math.max(0, prev - sale.monto));
-      setSalesHistory((prev) => prev.filter((s) => s.id !== saleId));
+      setTotalHoy((prev) => Math.max(0, prev - sale.monto_total));
+      const anulaciónMov: Movimiento = {
+        id_mov: `anul-${Date.now()}`,
+        jornada_id: jornadaId,
+        tipo: 'ANULACION',
+        categoria_id: sale.categoria_id,
+        cantidad: sale.cantidad,
+        precio_unitario: sale.precio_unitario,
+        monto_total: sale.monto_total,
+        metodo_pago: sale.metodo_pago,
+        ref_mov: saleId,
+        usuario: 'mostrador',
+        dispositivo_id: 'disp-local',
+        ts_cliente: new Date().toISOString(),
+        estado_sincronizacion: 'CONFIRMADO',
+      };
+      setMovimientos((prev) => [...prev, anulaciónMov]);
     }
+  };
+
+  // Confirmación de Apertura
+  const handleConfirmApertura = (data: {
+    fecha: string;
+    fondoInicial: number;
+    inventarioInicial: Record<string, number>;
+  }) => {
+    const newJorId = `JOR-${data.fecha}-${Date.now().toString(36).toUpperCase()}`;
+    setJornadaId(newJorId);
+    setFondoInicial(data.fondoInicial);
+    setInventarioInicial(data.inventarioInicial);
+    setMovimientos([]);
+    setEntradasAcumuladas({});
+    setMermasAcumuladas({});
+    setTotalHoy(0);
+    setJornadaActiva(true);
+    setCurrentView('mostrador');
+  };
+
+  // Registro de Merma
+  const handleSaveMerma = (data: {
+    categoriaId: string;
+    cantidad: number;
+    motivo: MotivoMermaId;
+    nota?: string;
+  }) => {
+    const nuevoMov: Movimiento = {
+      id_mov: `merma-${Date.now()}`,
+      jornada_id: jornadaId,
+      tipo: 'MERMA',
+      categoria_id: data.categoriaId,
+      cantidad: data.cantidad,
+      precio_unitario: 0,
+      monto_total: 0,
+      metodo_pago: 'EFECTIVO',
+      motivo: data.motivo,
+      usuario: 'mostrador',
+      dispositivo_id: 'disp-local',
+      ts_cliente: new Date().toISOString(),
+      nota: data.nota,
+      estado_sincronizacion: 'CONFIRMADO',
+    };
+
+    setMermasAcumuladas((prev) => ({
+      ...prev,
+      [data.categoriaId]: (prev[data.categoriaId] ?? 0) + data.cantidad,
+    }));
+    setMovimientos((prev) => [...prev, nuevoMov]);
+    setCurrentView('mostrador');
+  };
+
+  // Registro de Entrada
+  const handleSaveEntrada = (data: {
+    entradas: Record<string, number>;
+    nota?: string;
+  }) => {
+    const nowIso = new Date().toISOString();
+    const nuevosMovs: Movimiento[] = [];
+
+    for (const [catId, cant] of Object.entries(data.entradas)) {
+      if (cant > 0) {
+        nuevosMovs.push({
+          id_mov: `entrada-${catId}-${Date.now()}`,
+          jornada_id: jornadaId,
+          tipo: 'ENTRADA',
+          categoria_id: catId,
+          cantidad: cant,
+          precio_unitario: 0,
+          monto_total: 0,
+          metodo_pago: 'EFECTIVO',
+          usuario: 'supervisora',
+          dispositivo_id: 'disp-local',
+          ts_cliente: nowIso,
+          nota: data.nota,
+          estado_sincronizacion: 'CONFIRMADO',
+        });
+        setEntradasAcumuladas((prev) => ({
+          ...prev,
+          [catId]: (prev[catId] ?? 0) + cant,
+        }));
+      }
+    }
+
+    setMovimientos((prev) => [...prev, ...nuevosMovs]);
+    setCurrentView('mostrador');
+  };
+
+  // Confirmación de Cierre
+  const handleConfirmCierre = () => {
+    setJornadaActiva(false);
   };
 
   return (
     <div className="min-h-screen bg-stone-100 flex items-center justify-center">
-      <MostradorScreen
-        catalog={DEFAULT_CATALOG}
-        totalHoy={totalHoy}
-        pendingSyncCount={0}
-        jornadaActiva={true}
-        onRegisterSale={handleRegisterSale}
-        onUndoSale={handleUndoSale}
-        onNavigateToMerma={() => alert('Navegar a Merma')}
-        onNavigateToEntrada={() => alert('Navegar a Entrada')}
-        onNavigateToCierre={() => alert('Navegar a Cierre')}
-      />
+      {currentView === 'mostrador' && (
+        <MostradorScreen
+          catalog={DEFAULT_CATALOG}
+          totalHoy={totalHoy}
+          pendingSyncCount={0}
+          jornadaActiva={jornadaActiva}
+          onRegisterSale={handleRegisterSale}
+          onUndoSale={handleUndoSale}
+          onNavigateToMerma={() => setCurrentView('merma')}
+          onNavigateToEntrada={() => setCurrentView('entrada')}
+          onNavigateToCierre={() => setCurrentView('cierre')}
+        />
+      )}
+
+      {currentView === 'apertura' && (
+        <AperturaScreen
+          initialStock={inventarioInicial}
+          defaultFondoInicial={fondoInicial}
+          catalog={DEFAULT_CATALOG}
+          onConfirmApertura={handleConfirmApertura}
+          onCancel={() => setCurrentView('mostrador')}
+        />
+      )}
+
+      {currentView === 'cierre' && (
+        <CierreScreen
+          jornadaId={jornadaId}
+          fondoInicial={fondoInicial}
+          inventarioInicial={inventarioInicial}
+          entradas={entradasAcumuladas}
+          mermas={mermasAcumuladas}
+          movimientos={movimientos}
+          catalog={DEFAULT_CATALOG}
+          onConfirmCierre={handleConfirmCierre}
+          onCancel={() => setCurrentView('mostrador')}
+        />
+      )}
+
+      {currentView === 'merma' && (
+        <MermaScreen
+          catalog={DEFAULT_CATALOG}
+          onSaveMerma={handleSaveMerma}
+          onCancel={() => setCurrentView('mostrador')}
+        />
+      )}
+
+      {currentView === 'entrada' && (
+        <EntradaScreen
+          catalog={DEFAULT_CATALOG}
+          onSaveEntrada={handleSaveEntrada}
+          onCancel={() => setCurrentView('mostrador')}
+        />
+      )}
     </div>
   );
 };
