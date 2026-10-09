@@ -220,4 +220,37 @@ describe('F5.3: Implementación de SheetsAppsScriptAdapter', () => {
       })
     ).rejects.toThrow('Ya existe una jornada abierta actualmente');
   });
+
+  it('debe ejecutar testConnection exitosamente reportando latencia y conteo de catálogo', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({ success: true, items: [{ id: '1' }, { id: '2' }] }),
+    });
+
+    const adapter = new SheetsAppsScriptAdapter({
+      webappUrl: dummyUrl,
+      fetchFn: mockFetch as unknown as typeof fetch,
+    });
+
+    const testRes = await adapter.testConnection();
+    expect(testRes.success).toBe(true);
+    expect(testRes.itemCount).toBe(2);
+    expect(testRes.latencyMs).toBeGreaterThanOrEqual(0);
+  });
+
+  it('debe reportar fallo en testConnection si la URL no está configurada o hay error de red', async () => {
+    const adapterSinUrl = new SheetsAppsScriptAdapter({ webappUrl: '' });
+    const resSinUrl = await adapterSinUrl.testConnection('');
+    expect(resSinUrl.success).toBe(false);
+    expect(resSinUrl.error).toContain('no configurada');
+
+    const mockFetchError = vi.fn().mockRejectedValue(new Error('Network offline'));
+    const adapterConError = new SheetsAppsScriptAdapter({
+      webappUrl: dummyUrl,
+      fetchFn: mockFetchError as unknown as typeof fetch,
+    });
+    const resError = await adapterConError.testConnection();
+    expect(resError.success).toBe(false);
+    expect(resError.error).toContain('Network offline');
+  });
 });

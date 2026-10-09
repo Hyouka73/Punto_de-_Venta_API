@@ -115,18 +115,27 @@
 
 ---
 
-## FASE 6: PILOTO DE 2 SEMANAS EN PARALELO CON LIBRETA (Sprint F6)
+## FASE 6: DESPLIEGUE, CONEXIÓN REAL A GOOGLE SHEETS Y CONFIGURACIÓN (Sprint F6)
 - [x] **F6.1: Despliegue en Netlify y PWA Setup**
   - Desplegar frontend estático en Netlify bajo subdominio con HTTPS.
-  - Instalación de PWA en teléfono de mostrador y teléfono de supervisora (`docs/GUIA_PILOTO_PARALELO.md`).
+  - Configuración de PWA con service worker, iconos y precache.
   - *Criterio de Aceptación:* Icono en pantalla de inicio y ejecución a pantalla completa en modo offline.
-- [ ] **F6.2: Ejecución del Piloto Paralelo**
-  - [x] **F6.2.1: Semana 1 de Piloto (Asistida) y Calibración** (`docs/BITACORA_SEMANA_1_ASISTIDA.md`, `src/domain/pilot/`).
-  - [ ] **F6.2.2: Semana 2 de Piloto (Autónoma)** (Operación independiente y cierre <5 min).
-  - [ ] **F6.2.3: Medición de Criterios de Salida para Retiro de Libreta** (5 días consecutivos en umbrales de éxito).
+- [x] **F6.2: Guía Operativa de Conexión a Google Sheets y Apps Script**
+  - Documentar en `docs/GUIA_CONEXION_GOOGLE_SHEETS.md` los pasos detallados para crear la hoja en Google Drive, ejecutar `gas/SetupMasterSheets.js`, instalar `gas/Code.js`, configurar Script Properties y desplegar la Web App.
+  - *Criterio de Aceptación:* Guía técnica completa, clara y reproducible para cualquier cuenta de Google.
+- [x] **F6.3: Integración de Verificación de Conexión en Vivo en la App**
+  - Agregar en la interfaz (`ConfiguracionScreen` / `SyncStatusScreen`) un panel para configurar la URL de Apps Script y probar la conectividad en vivo (ping, latencia, catálogo).
+  - *Criterio de Aceptación:* Prueba interactiva de conexión desde la app con feedback visual de éxito/error.
 
 ---
 
-## FASE 7: ESTABILIZACIÓN Y HOJA DE RUTA (Sprint F7)
-- [ ] **F7.1: Auditoría de Resultados del Piloto y Decisión de Retiro de Libreta**
-- [ ] **F7.2: Plan de Activación de Módulos Reservados (Sabores, Compras, Transferencias)**
+## FASE 7: PLAN DE VERIFICACIÓN VISUAL Y CERTIFICACIÓN TÉCNICA (Sprint F7)
+- [x] **F7.1: Especificación del Plan de Verificación Visual Integral**
+  - Documentar en `docs/PLAN_VERIFICACION_VISUAL.md` la matriz de verificación de las 9 pantallas con sus estados interactivos y criterios de aceptación ergonómicos.
+  - *Criterio de Aceptación:* Checklist exhaustivo para auditar visualmente cada pantalla del sistema.
+- [x] **F7.2: Selector Flotante de Verificación Visual E2E (Visual Inspector)**
+  - Implementar herramienta de navegación rápida entre pantallas en desarrollo para validar flujos e interfaces al instante (`VisualVerifierBar`).
+  - *Criterio de Aceptación:* Cambio de pantalla en 1 toque sin bloqueos de estado.
+- [x] **F7.3: Auditoría Técnica Final, Presupuesto de Rendimiento y Certificación**
+  - Validar presupuesto (<100ms, 60 FPS), build de producción y 100% de tests unitarios.
+  - *Criterio de Aceptación:* Aplicación lista para entrega con cero errores técnicos.

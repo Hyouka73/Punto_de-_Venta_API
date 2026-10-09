@@ -230,4 +230,81 @@ export class SheetsAppsScriptAdapter implements IDataAdapter {
     });
     return res;
   }
+
+  /**
+   * Ejecuta un test de conectividad en vivo contra la Web App de Apps Script
+   */
+  async testConnection(overrideUrl?: string): Promise<{
+    success: boolean;
+    latencyMs: number;
+    itemCount?: number;
+    error?: string;
+  }> {
+    const targetUrl = overrideUrl || this.webappUrl;
+    if (!targetUrl) {
+      return {
+        success: false,
+        latencyMs: 0,
+        error: 'URL de Google Apps Script no configurada',
+      };
+    }
+
+    const t0 = performance.now();
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      const response = await this.fetchFn(targetUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'GET_CATALOG' }),
+        redirect: 'follow',
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      const t1 = performance.now();
+      const latencyMs = Math.round(t1 - t0);
+
+      if (!response.ok) {
+        return {
+          success: false,
+          latencyMs,
+          error: `Error HTTP ${response.status}: ${response.statusText}`,
+        };
+      }
+
+      const text = await response.text();
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        return {
+          success: false,
+          latencyMs,
+          error: 'La respuesta del servidor no es un JSON válido',
+        };
+      }
+
+      if (data && data.success) {
+        return {
+          success: true,
+          latencyMs,
+          itemCount: Array.isArray(data.items) ? data.items.length : 0,
+        };
+      }
+      return {
+        success: false,
+        latencyMs,
+        error: data?.error || 'Respuesta inesperada del backend',
+      };
+    } catch (err: any) {
+      const t1 = performance.now();
+      return {
+        success: false,
+        latencyMs: Math.round(t1 - t0),
+        error: err.message || 'Fallo de red al conectar con Google Apps Script',
+      };
+    }
+  }
 }

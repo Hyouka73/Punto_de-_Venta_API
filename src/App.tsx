@@ -9,6 +9,7 @@ import {
 import { DEFAULT_CATALOG } from './domain/config/defaultCatalog';
 import type { CatalogoItem, MotivoMermaId } from './domain/config/types';
 import type { Movimiento } from './domain/types';
+import { VisualVerifierBar } from './ui/components/VisualVerifierBar';
 
 const PanelScreen = lazy(() => import('./ui/screens/PanelScreen'));
 const SyncStatusScreen = lazy(() => import('./ui/screens/SyncStatusScreen'));
@@ -302,6 +303,12 @@ export const App: React.FC = () => {
           onCancel={() => setCurrentView('mostrador')}
         />
       )}
+
+      {/* Inspector Flotante de Verificación Visual E2E (Permite auditar las 9 pantallas) */}
+      <VisualVerifierBar
+        currentView={currentView}
+        onSelectScreen={(screen) => setCurrentView(screen)}
+      />
     </div>
   );
 };

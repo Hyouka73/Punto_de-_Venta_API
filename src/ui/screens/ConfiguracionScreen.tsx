@@ -14,7 +14,14 @@ import {
   Save,
   CheckCircle2,
   AlertTriangle,
+  Cloud,
+  RefreshCw,
+  ExternalLink,
+  Check,
+  X,
+  Database,
 } from 'lucide-react';
+import { SheetsAppsScriptAdapter } from '@/adapters/SheetsAppsScriptAdapter';
 
 export interface ConfiguracionScreenProps {
   initialCatalog?: readonly CatalogoItem[];
@@ -24,7 +31,7 @@ export interface ConfiguracionScreenProps {
   onBack: () => void;
 }
 
-type ConfigTab = 'catalogo' | 'combos' | 'parametros' | 'seguridad';
+type ConfigTab = 'catalogo' | 'combos' | 'parametros' | 'seguridad' | 'conexion';
 
 export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
   initialCatalog = DEFAULT_CATALOG,
@@ -47,6 +54,61 @@ export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
   const [catalogItems, setCatalogItems] = useState<CatalogoItem[]>([...initialCatalog]);
   const [params, setParams] = useState<ParametrosNegocio>({ ...initialParameters });
   const [showSavedToast, setShowSavedToast] = useState<boolean>(false);
+
+  // Estado de Conexión a Google Sheets
+  const [adapterMode, setAdapterMode] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('pos_adapter_mode') || 'mock';
+    }
+    return 'mock';
+  });
+  const [webappUrl, setWebappUrl] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('pos_webapp_url') || (import.meta.env.VITE_SHEETS_WEBAPP_URL as string) || '';
+    }
+    return '';
+  });
+  const [testState, setTestState] = useState<{
+    testing: boolean;
+    success?: boolean;
+    message?: string;
+    latencyMs?: number;
+    itemCount?: number;
+  }>({ testing: false });
+
+  const handleTestSheetsConnection = async () => {
+    triggerHaptic(40);
+    setTestState({ testing: true });
+    try {
+      const adapter = new SheetsAppsScriptAdapter({ webappUrl });
+      const res = await adapter.testConnection(webappUrl);
+      if (res.success) {
+        triggerHaptic(60);
+        setTestState({
+          testing: false,
+          success: true,
+          latencyMs: res.latencyMs,
+          itemCount: res.itemCount,
+          message: `¡Conexión Exitosa! Latencia: ${res.latencyMs}ms | ${res.itemCount} items leídos del catálogo`,
+        });
+      } else {
+        triggerHaptic(100);
+        setTestState({
+          testing: false,
+          success: false,
+          latencyMs: res.latencyMs,
+          message: res.error || 'No se pudo conectar a Google Apps Script',
+        });
+      }
+    } catch (err: any) {
+      triggerHaptic(100);
+      setTestState({
+        testing: false,
+        success: false,
+        message: err.message || 'Error inesperado de red',
+      });
+    }
+  };
 
   // Manejador del Teclado Numérico para PIN (6 dígitos)
   const handlePinDigit = (digit: string) => {
@@ -106,6 +168,10 @@ export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
   // Guardar Cambios
   const handleSave = () => {
     triggerHaptic(60);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('pos_adapter_mode', adapterMode);
+      localStorage.setItem('pos_webapp_url', webappUrl);
+    }
     if (onSaveConfig) {
       onSaveConfig(catalogItems, params);
     }
@@ -235,6 +301,7 @@ export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
           { id: 'combos', label: 'Combos', icon: Layers },
           { id: 'parametros', label: 'Parámetros', icon: DollarSign },
           { id: 'seguridad', label: 'Seguridad', icon: Shield },
+          { id: 'conexion', label: 'Google Sheets', icon: Cloud },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -466,6 +533,155 @@ export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
                     <li><strong>Admin:</strong> PIN de 6 dígitos (catálogo y configuración).</li>
                   </ul>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Pestaña: Conexión con Google Sheets */}
+        {activeTab === 'conexion' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-stone-400">
+                Conexión & Google Sheets
+              </h2>
+              <span
+                className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                  adapterMode === 'sheets'
+                    ? 'bg-emerald-100 text-emerald-800'
+                    : 'bg-stone-200 text-stone-700'
+                }`}
+              >
+                {adapterMode === 'sheets' ? 'Modo Sheets Activo' : 'Modo Mock Local'}
+              </span>
+            </div>
+
+            {/* Selector de Adaptador */}
+            <div className="rounded-2xl border border-stone-200 bg-white p-4 space-y-3">
+              <div className="font-bold text-xs text-stone-800">Motor de Persistencia</div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic(40);
+                    setAdapterMode('mock');
+                  }}
+                  className={`p-3 rounded-xl border text-left transition-all ${
+                    adapterMode === 'mock'
+                      ? 'border-amber-500 bg-amber-50/60 ring-2 ring-amber-400/20'
+                      : 'border-stone-200 hover:border-stone-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Database className="h-4 w-4 text-amber-600" />
+                    <span className="font-bold text-xs text-stone-900">Mock Local</span>
+                  </div>
+                  <p className="text-[10px] text-stone-500">
+                    Almacenamiento en memoria e IndexedDB. Ideal para desarrollo y demostración offline.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic(40);
+                    setAdapterMode('sheets');
+                  }}
+                  className={`p-3 rounded-xl border text-left transition-all ${
+                    adapterMode === 'sheets'
+                      ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-400/20'
+                      : 'border-stone-200 hover:border-stone-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Cloud className="h-4 w-4 text-emerald-600" />
+                    <span className="font-bold text-xs text-stone-900">Google Sheets</span>
+                  </div>
+                  <p className="text-[10px] text-stone-500">
+                    Backend real conectado a Apps Script con append-only ledger y cuadre triple.
+                  </p>
+                </button>
+              </div>
+            </div>
+
+            {/* Configuración de URL de Apps Script */}
+            <div className="rounded-2xl border border-stone-200 bg-white p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="font-bold text-xs text-stone-800">
+                  URL de Google Apps Script Web App
+                </label>
+                <span className="text-[10px] text-stone-400 font-mono">/exec</span>
+              </div>
+              <input
+                type="text"
+                placeholder="https://script.google.com/macros/s/.../exec"
+                value={webappUrl}
+                onChange={(e) => setWebappUrl(e.target.value)}
+                className="w-full rounded-xl border border-stone-200 px-3 py-2 text-xs font-mono text-stone-800 placeholder:text-stone-300 focus:border-amber-500 focus:outline-hidden"
+              />
+
+              {/* Botón de Probar Conexión */}
+              <div className="pt-2 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  disabled={testState.testing || !webappUrl}
+                  onClick={handleTestSheetsConnection}
+                  className="flex items-center gap-2 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white px-3.5 py-2 text-xs font-bold active:scale-95 transition-all shadow-xs"
+                >
+                  {testState.testing ? (
+                    <>
+                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                      <span>Probando Conexión...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-3.5 w-3.5" />
+                      <span>Probar Conexión en Vivo</span>
+                    </>
+                  )}
+                </button>
+
+                <span className="text-[10px] text-stone-400">POST GET_CATALOG</span>
+              </div>
+
+              {/* Resultado del Test */}
+              {testState.message && (
+                <div
+                  className={`mt-2 p-3 rounded-xl border text-xs flex items-start gap-2.5 transition-all ${
+                    testState.success
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                      : 'bg-rose-50 border-rose-200 text-rose-900'
+                  }`}
+                >
+                  {testState.success ? (
+                    <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                  ) : (
+                    <X className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                  )}
+                  <div>
+                    <div className="font-bold">
+                      {testState.success ? 'Conexión Exitosa' : 'Fallo de Conexión'}
+                    </div>
+                    <p className="text-[11px] mt-0.5 opacity-90">{testState.message}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Card de Guía Rápida */}
+            <div className="rounded-2xl border border-stone-200 bg-amber-50/60 p-4 space-y-2 text-amber-950">
+              <div className="flex items-center gap-2 font-bold text-xs">
+                <ExternalLink className="h-4 w-4 text-amber-700" />
+                <span>¿Cómo conectar tu Google Sheets?</span>
+              </div>
+              <p className="text-[11px] text-amber-900/80 leading-relaxed">
+                1. Crea una hoja en <code>sheets.new</code>.<br />
+                2. Pega <code>gas/SetupMasterSheets.js</code> para crear las 8 hojas.<br />
+                3. Pega <code>gas/Code.js</code> y añade los PINs en Script Properties.<br />
+                4. Implementa como Web App pública (Cualquier usuario) y copia la URL.
+              </p>
+              <div className="text-[10px] font-semibold text-amber-800">
+                Consulta la guía completa en <code>docs/GUIA_CONEXION_GOOGLE_SHEETS.md</code>
               </div>
             </div>
           </div>
