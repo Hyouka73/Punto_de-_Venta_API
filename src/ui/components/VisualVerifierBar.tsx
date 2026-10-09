@@ -33,14 +33,39 @@ const SCREENS: readonly { id: ScreenId; label: string; icon: string }[] = [
   { id: 'laboratorio', label: 'Lab DEV', icon: '🔬' },
 ];
 
+type Corner = 'tl' | 'tr' | 'bl' | 'br';
+const CORNER_CLASS: Record<Corner, string> = {
+  tl: 'top-1 left-1',
+  tr: 'top-1 right-1',
+  bl: 'bottom-1 left-1',
+  br: 'bottom-1 right-1',
+};
+const CORNER_ORDER: Corner[] = ['tr', 'br', 'bl', 'tl'];
+const CORNER_KEY = 'pos_verifier_corner';
+
 export const VisualVerifierBar: React.FC<VisualVerifierBarProps> = ({
   currentView,
   onSelectScreen,
 }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
+  const [corner, setCorner] = useState<Corner>(() => {
+    const saved = typeof window !== 'undefined' ? window.localStorage.getItem(CORNER_KEY) : null;
+    return (CORNER_ORDER as string[]).includes(saved ?? '') ? (saved as Corner) : 'tr';
+  });
+
+  // UR9: oculto automáticamente al capturar (?capture=1) y fuera de DEV
+  const capture =
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('capture') === '1';
+  if (capture || !import.meta.env.DEV) return null;
+
+  const moveCorner = () => {
+    const next: Corner = CORNER_ORDER[(CORNER_ORDER.indexOf(corner) + 1) % CORNER_ORDER.length] ?? 'tr';
+    setCorner(next);
+    window.localStorage.setItem(CORNER_KEY, next);
+  };
 
   return (
-    <div className="fixed bottom-3 right-3 z-50 print:hidden select-none">
+    <div className={`fixed ${CORNER_CLASS[corner]} z-50 print:hidden select-none`}>
       {!isOpen ? (
         <button
           type="button"
@@ -50,7 +75,7 @@ export const VisualVerifierBar: React.FC<VisualVerifierBarProps> = ({
         >
           <Eye className="h-3.5 w-3.5 text-amber-400" />
           <span>Verificador Visual</span>
-          <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="flex h-2 w-2 rounded-full bg-emerald-400" />
         </button>
       ) : (
         <div className="w-80 rounded-2xl bg-stone-900/95 text-white p-3 shadow-2xl backdrop-blur-md border border-stone-700/70 space-y-2.5 animate-in fade-in slide-in-from-bottom-2 duration-150">
@@ -104,6 +129,13 @@ export const VisualVerifierBar: React.FC<VisualVerifierBarProps> = ({
             <span>
               Activa: <strong className="text-white capitalize">{currentView}</strong>
             </span>
+            <button
+              type="button"
+              onClick={moveCorner}
+              className="text-amber-400 hover:underline font-bold"
+            >
+              Mover ↻
+            </button>
             <button
               type="button"
               onClick={() => setIsOpen(false)}

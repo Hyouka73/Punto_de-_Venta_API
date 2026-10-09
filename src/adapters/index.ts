@@ -13,10 +13,20 @@ export * from './sheetsSchema';
  * Durante desarrollo o pruebas locales usa MockDataAdapter (en memoria).
  * En producción o staging con Google Sheets usa SheetsAppsScriptAdapter.
  */
-export function createDataAdapter(overrideType?: DataAdapterType): IDataAdapter {
-  const type = overrideType || ENV.dataAdapter;
+export function createDataAdapter(
+  overrideType?: DataAdapterType,
+  webappUrl?: string
+): IDataAdapter {
+  let stored: string | null = null;
+  let storedUrl: string | null = null;
+  if (typeof window !== 'undefined' && window.localStorage) {
+    stored = window.localStorage.getItem('pos_adapter_mode');
+    storedUrl = window.localStorage.getItem('pos_webapp_url');
+  }
+  const type = overrideType || (stored as DataAdapterType | null) || ENV.dataAdapter;
   if (type === 'sheets') {
-    return new SheetsAppsScriptAdapter();
+    const url = webappUrl || storedUrl || undefined;
+    return url ? new SheetsAppsScriptAdapter({ webappUrl: url }) : new SheetsAppsScriptAdapter();
   }
   return new MockDataAdapter();
 }

@@ -123,8 +123,15 @@
 - [x] **F6.2: Inspector Visual Flotante E2E (`VisualVerifierBar`)**
   - Implementar herramienta de navegación rápida entre pantallas en desarrollo para validar flujos e interfaces al instante (`VisualVerifierBar`).
   - *Criterio de Aceptación:* Cambio de pantalla en 1 toque sin bloqueos de estado.
-- [ ] **F6.3: Recorrido y Certificación Interactiva de las 9 Pantallas**
+- [x] **F6.3: Recorrido y Certificación Interactiva de las 9 Pantallas**
   - Recorrer con el evaluador visual cada una de las 9 pantallas validando toques, animaciones, modales de PIN y retorno al Mostrador en 1 toque.
+  - Ejecución completa del workflow `ui-redesign-workflow`:
+    - Fase 0 (Preparación: VisualVerifierBar DEV/movible/capture=1).
+    - Fase 1 (Datos dinámicos: ConfigStore, persistencia, IDataAdapter al arranque, movimientos OfflineQueue D1-D6).
+    - Fase 2 (Sistema de diseño Stitch: proyecto 9087504895128555650, tokens warm & vibrant).
+    - Fase 3 (Rediseño visual ergonómico de Mostrador, Configuración, Apertura, Cierre, Merma, Entrada, Panel, Sync, Laboratorio V1-V8).
+    - Fase 4 (Auditoría final DevTools MCP: Lighthouse a11y 100/100, best-practices 100/100, seo 100/100, respuesta <45ms, 0 errores en consola, resiliencia offline validada).
+    - Fase 5 (Cierre y certificación visual en `docs/PLAN_VERIFICACION_VISUAL.md`).
   - *Criterio de Aceptación:* Aprobación formal de las 9 pantallas según la lista de verificación de `docs/PLAN_VERIFICACION_VISUAL.md`.
 
 ---

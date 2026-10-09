@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import type { CatalogoItem, ParametrosNegocio } from '@/domain/config/types';
-import { DEFAULT_CATALOG } from '@/domain/config/defaultCatalog';
-import { DEFAULT_PARAMETERS } from '@/domain/config/parameters';
 import { triggerHaptic } from '../utils/haptics';
+import { ItemIcon, ICON_OPTIONS, COLOR_OPTIONS } from '../utils/itemIcons';
+import { slugId } from '@/state/configReducer';
 import {
   Lock,
   ArrowLeft,
@@ -21,21 +21,40 @@ import {
   X,
   Database,
 } from 'lucide-react';
+import { DEFAULT_PARAMETERS } from '@/domain/config/parameters';
 import { SheetsAppsScriptAdapter } from '@/adapters/SheetsAppsScriptAdapter';
 
 export interface ConfiguracionScreenProps {
-  initialCatalog?: readonly CatalogoItem[];
+  initialCatalog: readonly CatalogoItem[];
   initialParameters?: ParametrosNegocio;
+  adapterMode?: 'mock' | 'sheets';
+  webappUrl?: string;
   adminPin?: string;
-  onSaveConfig?: (newCatalog: CatalogoItem[], newParams: ParametrosNegocio) => void;
+  onSaveConfig?: (
+    newCatalog: CatalogoItem[],
+    newParams: ParametrosNegocio,
+    adapterMode: 'mock' | 'sheets',
+    webappUrl: string
+  ) => void;
   onBack: () => void;
 }
 
 type ConfigTab = 'catalogo' | 'combos' | 'parametros' | 'seguridad' | 'conexion';
 
+const BLANK_PRODUCT = {
+  nombre: '',
+  precio: 0,
+  costo: 0,
+  icono: 'ice-cream',
+  color: COLOR_OPTIONS[0] ?? '#38BDF8',
+  controla_stock: true,
+};
+
 export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
-  initialCatalog = DEFAULT_CATALOG,
+  initialCatalog,
   initialParameters = DEFAULT_PARAMETERS,
+  adapterMode: initialAdapterMode = 'mock',
+  webappUrl: initialWebappUrl = '',
   adminPin = '654321', // PIN admin por defecto para desarrollo
   onSaveConfig,
   onBack,
@@ -56,18 +75,18 @@ export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
   const [showSavedToast, setShowSavedToast] = useState<boolean>(false);
 
   // Estado de Conexión a Google Sheets
-  const [adapterMode, setAdapterMode] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('pos_adapter_mode') || 'mock';
-    }
-    return 'mock';
-  });
-  const [webappUrl, setWebappUrl] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('pos_webapp_url') || (import.meta.env.VITE_SHEETS_WEBAPP_URL as string) || '';
-    }
-    return '';
-  });
+  const [adapterMode, setAdapterMode] = useState<'mock' | 'sheets'>(initialAdapterMode);
+  const [webappUrl, setWebappUrl] = useState<string>(
+    initialWebappUrl || ((import.meta.env.VITE_SHEETS_WEBAPP_URL as string) ?? '')
+  );
+  const [newProduct, setNewProduct] = useState<typeof BLANK_PRODUCT | null>(null);
+  const [newCombo, setNewCombo] = useState<{
+    nombre: string;
+    precio: number;
+    icono: string;
+    color: string;
+    qty: Record<string, number>;
+  } | null>(null);
   const [testState, setTestState] = useState<{
     testing: boolean;
     success?: boolean;
@@ -151,29 +170,30 @@ export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
     setPinError(null);
   };
 
-  // Actualización de Precios en Catálogo
-  const handlePriceChange = (id: string, newPrice: number) => {
-    setCatalogItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, precio: Math.max(0, newPrice) } : item))
-    );
+  const patchItem = (id: string, patch: Partial<CatalogoItem>) => {
+    setCatalogItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   };
 
-  // Toggle de Activo
-  const handleToggleActive = (id: string) => {
-    setCatalogItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, activo: !item.activo } : item))
-    );
+  const moveItem = (id: string, dir: -1 | 1) => {
+    setCatalogItems((prev) => {
+      const sorted = [...prev].sort((a, b) => a.orden - b.orden);
+      const i = sorted.findIndex((c) => c.id === id);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= sorted.length) return prev;
+      const a = sorted[i];
+      const b = sorted[j];
+      if (!a || !b) return prev;
+      sorted[i] = b;
+      sorted[j] = a;
+      return sorted.map((c, k) => ({ ...c, orden: k + 1 }));
+    });
   };
 
-  // Guardar Cambios
+  // Guardar Cambios (UR3: el store persiste en localStorage y el adaptador se reconstruye)
   const handleSave = () => {
     triggerHaptic(60);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('pos_adapter_mode', adapterMode);
-      localStorage.setItem('pos_webapp_url', webappUrl);
-    }
     if (onSaveConfig) {
-      onSaveConfig(catalogItems, params);
+      onSaveConfig(catalogItems, params, adapterMode, webappUrl);
     }
     setShowSavedToast(true);
     setTimeout(() => setShowSavedToast(false), 2500);
@@ -335,56 +355,62 @@ export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
         {/* Pestaña: Catálogo y Precios */}
         {activeTab === 'catalogo' && (
           <div className="space-y-3">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-stone-400">
-              Productos Base (Precios al Mostrador)
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-stone-500">
+                Productos ({catalogItems.filter((i) => !i.es_combo).length})
+              </h2>
+              <button
+                type="button"
+                data-testid="btn-nuevo-producto"
+                onClick={() => setNewProduct({ ...BLANK_PRODUCT })}
+                className="min-h-[56px] rounded-2xl bg-stone-900 text-white px-4 text-sm font-extrabold active:scale-95 transition-transform"
+              >
+                + Nuevo producto
+              </button>
+            </div>
+
+            {newProduct && (
+              <div className="rounded-2xl border-2 border-amber-400 bg-amber-50 p-4 space-y-3" data-testid="form-nuevo-producto">
+                <ProductFields
+                  value={newProduct}
+                  onChange={(v) => setNewProduct({ ...newProduct, ...v })}
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={!newProduct.nombre.trim() || newProduct.precio <= 0}
+                    onClick={() => {
+                      const id = slugId(newProduct.nombre, 'CAT', catalogItems.map((c) => c.id));
+                      setCatalogItems((prev) => [
+                        ...prev,
+                        { ...newProduct, nombre: newProduct.nombre.trim(), id, orden: prev.length + 1, activo: true, es_combo: false },
+                      ]);
+                      setNewProduct(null);
+                    }}
+                    className="flex-1 min-h-[56px] rounded-2xl bg-emerald-600 disabled:opacity-40 text-white font-extrabold text-base"
+                  >
+                    Agregar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewProduct(null)}
+                    className="min-h-[56px] px-5 rounded-2xl bg-stone-200 text-stone-800 font-bold text-base"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
 
             {catalogItems
               .filter((i) => !i.es_combo)
               .map((item) => (
-                <div
+                <ProductRow
                   key={item.id}
-                  className="rounded-2xl border border-stone-200 bg-white p-3.5 shadow-2xs flex items-center justify-between gap-3"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span className="text-2xl">{item.icono}</span>
-                    <div className="truncate">
-                      <div className="font-extrabold text-stone-900 text-xs truncate">
-                        {item.nombre}
-                      </div>
-                      <div className="text-[10px] text-stone-400 uppercase">
-                        {item.id}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <div className="flex items-center rounded-xl bg-stone-100 p-1">
-                      <span className="text-xs font-extrabold text-stone-500 px-1">$</span>
-                      <input
-                        type="number"
-                        min="0"
-                        value={item.precio}
-                        onChange={(e) =>
-                          handlePriceChange(item.id, parseFloat(e.target.value) || 0)
-                        }
-                        className="w-14 rounded-lg bg-white px-2 py-1 text-right text-xs font-black text-stone-900 focus:outline-amber-500"
-                      />
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => handleToggleActive(item.id)}
-                      className={`h-7 px-2 rounded-lg text-[10px] font-extrabold transition-all ${
-                        item.activo
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-stone-200 text-stone-500'
-                      }`}
-                    >
-                      {item.activo ? 'Activo' : 'Oculto'}
-                    </button>
-                  </div>
-                </div>
+                  item={item}
+                  onPatch={(patch) => patchItem(item.id, patch)}
+                  onMove={(d) => moveItem(item.id, d)}
+                />
               ))}
           </div>
         )}
@@ -392,44 +418,137 @@ export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
         {/* Pestaña: Combos */}
         {activeTab === 'combos' && (
           <div className="space-y-3">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-stone-400">
-              Combos Promocionales
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-stone-500">
+                Combos Promocionales
+              </h2>
+              <button
+                type="button"
+                data-testid="btn-nuevo-combo"
+                onClick={() =>
+                  setNewCombo({ nombre: '', precio: 0, icono: 'sparkles', color: COLOR_OPTIONS[4] ?? '#A855F7', qty: {} })
+                }
+                className="min-h-[56px] rounded-2xl bg-purple-700 text-white px-4 text-sm font-extrabold active:scale-95 transition-transform"
+              >
+                + Nuevo combo
+              </button>
+            </div>
+
+            {newCombo && (
+              <div className="rounded-2xl border-2 border-purple-400 bg-purple-50 p-4 space-y-3" data-testid="form-nuevo-combo">
+                <label className="block text-sm font-bold text-stone-800">
+                  Nombre
+                  <input
+                    type="text"
+                    value={newCombo.nombre}
+                    onChange={(e) => setNewCombo({ ...newCombo, nombre: e.target.value })}
+                    className="mt-1 w-full min-h-[48px] rounded-xl border border-stone-300 px-3 text-base"
+                  />
+                </label>
+                <label className="block text-sm font-bold text-stone-800">
+                  Precio ($)
+                  <input
+                    type="number"
+                    min="0"
+                    value={newCombo.precio || ''}
+                    onChange={(e) => setNewCombo({ ...newCombo, precio: parseFloat(e.target.value) || 0 })}
+                    className="mt-1 w-full min-h-[48px] rounded-xl border border-stone-300 px-3 text-base"
+                  />
+                </label>
+                <div className="space-y-1.5">
+                  <div className="text-sm font-bold text-stone-800">Componentes</div>
+                  {catalogItems
+                    .filter((i) => !i.es_combo && i.activo)
+                    .map((p) => (
+                      <div key={p.id} className="flex items-center justify-between rounded-xl bg-white border border-stone-200 px-3 py-2">
+                        <span className="text-sm font-semibold text-stone-800">{p.nombre}</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            aria-label={`Quitar ${p.nombre}`}
+                            onClick={() =>
+                              setNewCombo({ ...newCombo, qty: { ...newCombo.qty, [p.id]: Math.max(0, (newCombo.qty[p.id] ?? 0) - 1) } })
+                            }
+                            className="w-11 h-11 rounded-xl bg-stone-100 font-black text-lg"
+                          >
+                            −
+                          </button>
+                          <span className="w-6 text-center font-black text-base">{newCombo.qty[p.id] ?? 0}</span>
+                          <button
+                            type="button"
+                            aria-label={`Agregar ${p.nombre}`}
+                            onClick={() =>
+                              setNewCombo({ ...newCombo, qty: { ...newCombo.qty, [p.id]: (newCombo.qty[p.id] ?? 0) + 1 } })
+                            }
+                            className="w-11 h-11 rounded-xl bg-stone-900 text-white font-black text-lg"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={
+                      !newCombo.nombre.trim() ||
+                      newCombo.precio <= 0 ||
+                      Object.values(newCombo.qty).every((q) => q <= 0)
+                    }
+                    onClick={() => {
+                      const componentes = Object.entries(newCombo.qty)
+                        .filter(([, q]) => q > 0)
+                        .map(([id, q]) => ({ id, cant: q, cantidad: q }));
+                      const costo = componentes.reduce(
+                        (acc, c) => acc + (catalogItems.find((i) => i.id === c.id)?.costo ?? 0) * c.cant,
+                        0
+                      );
+                      setCatalogItems((prev) => [
+                        ...prev,
+                        {
+                          id: slugId(newCombo.nombre, 'CMB', prev.map((c) => c.id)),
+                          nombre: newCombo.nombre.trim(),
+                          precio: newCombo.precio,
+                          costo,
+                          icono: newCombo.icono,
+                          color: newCombo.color,
+                          orden: prev.length + 1,
+                          activo: true,
+                          controla_stock: false,
+                          es_combo: true,
+                          componentes,
+                        },
+                      ]);
+                      setNewCombo(null);
+                    }}
+                    className="flex-1 min-h-[56px] rounded-2xl bg-emerald-600 disabled:opacity-40 text-white font-extrabold text-base"
+                  >
+                    Agregar combo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewCombo(null)}
+                    className="min-h-[56px] px-5 rounded-2xl bg-stone-200 text-stone-800 font-bold text-base"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
 
             {catalogItems
               .filter((i) => i.es_combo)
               .map((combo) => (
-                <div
+                <ProductRow
                   key={combo.id}
-                  className="rounded-2xl border border-purple-200 bg-purple-50/40 p-4 shadow-2xs space-y-2"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">{combo.icono}</span>
-                      <div>
-                        <div className="font-black text-purple-950 text-sm">
-                          {combo.nombre}
-                        </div>
-                        <div className="text-[11px] text-purple-700">
-                          {combo.componentes?.map((c) => `${c.cant ?? c.cantidad ?? 1}x ${c.id}`).join(' + ')}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center rounded-xl bg-white border border-purple-200 p-1">
-                      <span className="text-xs font-extrabold text-purple-600 px-1">$</span>
-                      <input
-                        type="number"
-                        min="0"
-                        value={combo.precio}
-                        onChange={(e) =>
-                          handlePriceChange(combo.id, parseFloat(e.target.value) || 0)
-                        }
-                        className="w-14 rounded-lg bg-stone-50 px-2 py-1 text-right text-xs font-black text-stone-900 focus:outline-purple-500"
-                      />
-                    </div>
-                  </div>
-                </div>
+                  item={combo}
+                  subtitle={combo.componentes
+                    ?.map((c) => `${c.cant ?? c.cantidad ?? 1}× ${catalogItems.find((i) => i.id === c.id)?.nombre ?? c.id}`)
+                    .join(' + ')}
+                  onPatch={(patch) => patchItem(combo.id, patch)}
+                  onMove={(d) => moveItem(combo.id, d)}
+                />
               ))}
           </div>
         )}
@@ -687,6 +806,190 @@ export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
           </div>
         )}
       </main>
+    </div>
+  );
+};
+
+interface ProductFieldsValue {
+  nombre: string;
+  precio: number;
+  costo: number;
+  icono: string;
+  color: string;
+  controla_stock: boolean;
+}
+
+const ProductFields: React.FC<{
+  value: ProductFieldsValue;
+  onChange: (patch: Partial<ProductFieldsValue>) => void;
+}> = ({ value, onChange }) => (
+  <div className="space-y-3">
+    <label className="block text-sm font-bold text-stone-800">
+      Nombre
+      <input
+        type="text"
+        data-testid="input-nombre"
+        value={value.nombre}
+        onChange={(e) => onChange({ nombre: e.target.value })}
+        className="mt-1 w-full min-h-[48px] rounded-xl border border-stone-300 px-3 text-base"
+      />
+    </label>
+    <div className="grid grid-cols-2 gap-2">
+      <label className="block text-sm font-bold text-stone-800">
+        Precio ($)
+        <input
+          type="number"
+          min="0"
+          data-testid="input-precio"
+          value={value.precio || ''}
+          onChange={(e) => onChange({ precio: parseFloat(e.target.value) || 0 })}
+          className="mt-1 w-full min-h-[48px] rounded-xl border border-stone-300 px-3 text-base"
+        />
+      </label>
+      <label className="block text-sm font-bold text-stone-800">
+        Costo ($)
+        <input
+          type="number"
+          min="0"
+          value={value.costo || ''}
+          onChange={(e) => onChange({ costo: parseFloat(e.target.value) || 0 })}
+          className="mt-1 w-full min-h-[48px] rounded-xl border border-stone-300 px-3 text-base"
+        />
+      </label>
+    </div>
+    <div>
+      <div className="text-sm font-bold text-stone-800 mb-1">Icono</div>
+      <div className="flex flex-wrap gap-2">
+        {ICON_OPTIONS.map((o) => (
+          <button
+            key={o.id}
+            type="button"
+            aria-label={`Icono ${o.label}`}
+            aria-pressed={value.icono === o.id}
+            onClick={() => onChange({ icono: o.id })}
+            className={`w-12 h-12 rounded-xl border-2 flex items-center justify-center ${
+              value.icono === o.id ? 'border-stone-900 bg-white' : 'border-stone-200 bg-stone-50'
+            }`}
+          >
+            <ItemIcon icono={o.id} color={value.color} className="w-6 h-6" />
+          </button>
+        ))}
+      </div>
+    </div>
+    <div>
+      <div className="text-sm font-bold text-stone-800 mb-1">Color</div>
+      <div className="flex flex-wrap gap-2">
+        {COLOR_OPTIONS.map((c) => (
+          <button
+            key={c}
+            type="button"
+            aria-label={`Color ${c}`}
+            aria-pressed={value.color === c}
+            onClick={() => onChange({ color: c })}
+            className={`w-12 h-12 rounded-full border-4 ${
+              value.color === c ? 'border-stone-900' : 'border-white shadow'
+            }`}
+            style={{ backgroundColor: c }}
+          />
+        ))}
+      </div>
+    </div>
+    <label className="flex items-center gap-3 min-h-[48px] text-sm font-bold text-stone-800">
+      <input
+        type="checkbox"
+        checked={value.controla_stock}
+        onChange={(e) => onChange({ controla_stock: e.target.checked })}
+        className="w-6 h-6"
+      />
+      Controla inventario
+    </label>
+  </div>
+);
+
+const ProductRow: React.FC<{
+  item: CatalogoItem;
+  subtitle?: string;
+  onPatch: (patch: Partial<CatalogoItem>) => void;
+  onMove: (dir: -1 | 1) => void;
+}> = ({ item, subtitle, onPatch, onMove }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div
+      data-testid={`row-${item.id}`}
+      className={`rounded-2xl border bg-white p-3 shadow-2xs space-y-2 ${
+        item.es_combo ? 'border-purple-200' : 'border-stone-200'
+      } ${item.activo ? '' : 'opacity-60'}`}
+    >
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-xl" style={{ backgroundColor: `${item.color}33` }}>
+          <ItemIcon icono={item.icono} color={item.color} className="w-7 h-7" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-extrabold text-stone-900 text-base truncate">{item.nombre}</div>
+          <div className="text-sm text-stone-600 truncate">{subtitle ?? item.id}</div>
+        </div>
+        <div className="flex items-center rounded-xl bg-stone-100 px-2">
+          <span className="text-base font-extrabold text-stone-600">$</span>
+          <input
+            type="number"
+            min="0"
+            aria-label={`Precio de ${item.nombre}`}
+            data-testid={`price-${item.id}`}
+            value={item.precio}
+            onChange={(e) => onPatch({ precio: Math.max(0, parseFloat(e.target.value) || 0) })}
+            className="w-16 min-h-[48px] bg-transparent text-right text-base font-black text-stone-900 focus:outline-amber-500"
+          />
+        </div>
+      </div>
+      <div className="flex items-center gap-2 flex-wrap">
+        <button
+          type="button"
+          aria-label={`Subir ${item.nombre}`}
+          onClick={() => onMove(-1)}
+          className="w-12 h-12 rounded-xl bg-stone-100 font-black"
+        >
+          ↑
+        </button>
+        <button
+          type="button"
+          aria-label={`Bajar ${item.nombre}`}
+          onClick={() => onMove(1)}
+          className="w-12 h-12 rounded-xl bg-stone-100 font-black"
+        >
+          ↓
+        </button>
+        <button
+          type="button"
+          onClick={() => onPatch({ activo: !item.activo })}
+          className={`min-h-[48px] px-4 rounded-xl text-sm font-extrabold ${
+            item.activo ? 'bg-emerald-100 text-emerald-900' : 'bg-stone-200 text-stone-700'
+          }`}
+        >
+          {item.activo ? 'Activo' : 'Oculto'}
+        </button>
+        {!item.es_combo && (
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            className="min-h-[48px] px-4 rounded-xl bg-stone-100 text-sm font-bold text-stone-800"
+          >
+            {open ? 'Cerrar' : 'Editar'}
+          </button>
+        )}
+        <button
+          type="button"
+          aria-label={`Eliminar ${item.nombre}`}
+          onClick={() => onPatch({ activo: false })}
+          className="min-h-[48px] px-4 rounded-xl bg-rose-100 text-rose-800 text-sm font-extrabold ml-auto"
+        >
+          Eliminar
+        </button>
+      </div>
+      {open && !item.es_combo && (
+        <div className="pt-2 border-t border-stone-100">
+          <ProductFields value={item} onChange={onPatch} />
+        </div>
+      )}
     </div>
   );
 };

@@ -1,10 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Droplets,
-  IceCream,
-  Cookie,
-  Sparkles,
-  Star,
   RotateCcw,
   CloudCheck,
   CloudAlert,
@@ -17,8 +12,8 @@ import {
   BarChart3,
 } from 'lucide-react';
 import type { CatalogoItem } from '@/domain/config/types';
-import { DEFAULT_CATALOG } from '@/domain/config/defaultCatalog';
 import { triggerHaptic } from '../utils/haptics';
+import { ItemIcon } from '../utils/itemIcons';
 
 export interface RecentSale {
   readonly id: string;
@@ -33,6 +28,12 @@ export interface MostradorScreenProps {
   readonly totalHoy?: number;
   readonly pendingSyncCount?: number;
   readonly jornadaActiva?: boolean;
+  /** Stock restante por producto base (calculado desde movimientos) */
+  readonly stock?: Readonly<Record<string, number>>;
+  /** Piezas vendidas netas por producto en la jornada */
+  readonly sold?: Readonly<Record<string, number>>;
+  readonly adapterMode?: 'mock' | 'sheets';
+  readonly onNavigateToApertura?: () => void;
   readonly onRegisterSale?: (item: CatalogoItem, cantidad: number) => Promise<string | void> | string | void;
   readonly onUndoSale?: (saleId: string) => Promise<void> | void;
   readonly onNavigateToMerma?: () => void;
@@ -54,10 +55,14 @@ export interface MostradorScreenProps {
  * - Selector modal de cantidad rápida para ventas múltiples atómicas (R3).
  */
 export const MostradorScreen: React.FC<MostradorScreenProps> = ({
-  catalog = DEFAULT_CATALOG,
+  catalog = [],
   totalHoy = 0,
   pendingSyncCount = 0,
   jornadaActiva = true,
+  stock = {},
+  sold = {},
+  adapterMode = 'mock',
+  onNavigateToApertura,
   onRegisterSale,
   onUndoSale,
   onNavigateToMerma,
@@ -172,21 +177,18 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
     await executeSale(item, qty);
   };
 
-  // Renderizador de iconos por categoría
-  const renderItemIcon = (icono: string, color: string) => {
-    const iconClass = "w-10 h-10 drop-shadow-sm";
-    switch (icono) {
-      case 'droplets':
-        return <Droplets className={iconClass} style={{ color }} />;
-      case 'ice-cream':
-        return <IceCream className={iconClass} style={{ color }} />;
-      case 'cookie':
-        return <Cookie className={iconClass} style={{ color }} />;
-      case 'sparkles':
-        return <Sparkles className={iconClass} style={{ color }} />;
-      default:
-        return <Star className={iconClass} style={{ color }} />;
+  const nameOf = (id: string) => catalog.find((c) => c.id === id)?.nombre ?? id;
+
+  /** Stock restante visible: producto base directo; combo = mínimo de sus componentes. */
+  const stockOf = (item: CatalogoItem): number | null => {
+    if (item.es_combo && item.componentes?.length) {
+      return Math.min(
+        ...item.componentes.map((c) =>
+          Math.floor((stock[c.id] ?? 0) / (c.cant ?? c.cantidad ?? 1))
+        )
+      );
     }
+    return item.controla_stock ? (stock[item.id] ?? 0) : null;
   };
 
   return (
@@ -213,12 +215,20 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
             >
               {jornadaActiva ? '● Jornada Activa' : '○ Cerrada'}
             </span>
+            <span
+              data-testid="adapter-badge"
+              className={`ml-1 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold ${
+                adapterMode === 'sheets' ? 'bg-sky-100 text-sky-900' : 'bg-stone-200 text-stone-700'
+              }`}
+            >
+              {adapterMode === 'sheets' ? 'Sheets' : 'Mock'}
+            </span>
           </div>
         </div>
 
         {/* Total del día prominente */}
         <div className="text-right">
-          <span className="block text-[11px] font-semibold text-stone-400 uppercase tracking-wider">
+          <span className="block text-sm font-semibold text-stone-500 uppercase tracking-wider">
             Total Hoy
           </span>
           <span className="text-xl font-extrabold text-stone-900 tracking-tight">
@@ -252,77 +262,89 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
         </div>
       </header>
 
-      {/* ─── CUADRÍCULA DE BOTONES TÁCTILES (ZERO SCROLL ~75% DE PANTALLA) ─── */}
-      <main className="flex-1 p-3 grid grid-cols-2 gap-3 content-stretch overflow-hidden">
+      {/* ─── CUADRÍCULA DE BOTONES TÁCTILES (todos los productos activos sin scroll) ─── */}
+      {!jornadaActiva && (
+        <div className="mx-3 mt-3 rounded-2xl bg-amber-50 border-2 border-amber-300 p-4 flex items-center justify-between gap-3 shrink-0">
+          <div>
+            <p className="text-base font-extrabold text-amber-950">No hay jornada abierta</p>
+            <p className="text-sm text-amber-900/80">Abre la jornada para empezar a vender.</p>
+          </div>
+          <button
+            type="button"
+            onClick={onNavigateToApertura}
+            className="min-h-[56px] px-5 rounded-2xl bg-stone-900 text-white font-extrabold text-base active:scale-95 transition-transform"
+          >
+            Abrir jornada
+          </button>
+        </div>
+      )}
+      <main
+        className="flex-1 p-3 grid grid-cols-2 gap-2.5 overflow-hidden"
+        style={{ gridAutoRows: catalog.length > 6 ? 'minmax(88px, 1fr)' : 'minmax(96px, 1fr)' }}
+      >
+        {catalog.length === 0 && (
+          <div className="col-span-2 flex items-center justify-center text-center text-stone-500 font-semibold">
+            Sin productos activos. Agrégalos en Configuración.
+          </div>
+        )}
         {catalog.map((item) => {
           const isPressed = activeItem === item.id;
-
-          // Colores de fondo suaves con alto contraste para luz directa
-          let bgClass = "bg-white border-stone-200 text-stone-900";
-          let priceBadgeClass = "bg-stone-900 text-white";
-
-          if (item.id === 'CAT_AGUA') {
-            bgClass = "bg-sky-50 border-sky-300 hover:bg-sky-100/80";
-            priceBadgeClass = "bg-sky-600 text-white";
-          } else if (item.id === 'CAT_CREMA') {
-            bgClass = "bg-amber-50 border-amber-300 hover:bg-amber-100/80";
-            priceBadgeClass = "bg-amber-500 text-stone-900";
-          } else if (item.id === 'CAT_SANDWICH') {
-            bgClass = "bg-orange-50 border-orange-300 hover:bg-orange-100/80";
-            priceBadgeClass = "bg-orange-600 text-white";
-          } else if (item.id === 'CAT_NIEVE') {
-            bgClass = "bg-rose-50 border-rose-300 hover:bg-rose-100/80";
-            priceBadgeClass = "bg-rose-600 text-white";
-          } else if (item.id === 'CMB_DUO') {
-            bgClass = "bg-purple-50 border-purple-300 hover:bg-purple-100/80";
-            priceBadgeClass = "bg-purple-600 text-white";
-          }
+          const left = stockOf(item);
+          const lowStock = left !== null && left <= 5;
+          const soldQty = sold[item.id] ?? 0;
 
           return (
             <button
               key={item.id}
               type="button"
               disabled={!jornadaActiva}
+              data-testid={`product-${item.id}`}
               onPointerDown={() => handlePointerDown(item)}
               onPointerUp={() => handlePointerUp(item)}
               onPointerCancel={handlePointerCancel}
-              className={`relative flex flex-col justify-between p-4 rounded-counter border-2 shadow-sm transition-all duration-75 active:shadow-inner ${bgClass} ${
+              className={`relative flex flex-col justify-between px-3 py-2.5 rounded-counter border-2 shadow-sm transition-transform duration-75 active:shadow-inner bg-white text-left ${
                 isPressed ? 'scale-[0.96] brightness-95 ring-4 ring-amber-300/60' : ''
               } ${!jornadaActiva ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-[0.96]'}`}
-              style={{ minHeight: '88px' }}
+              style={{
+                minHeight: '88px',
+                borderColor: item.color,
+                backgroundColor: `${item.color}22`,
+              }}
             >
-              {/* Encabezado de la tarjeta: Icono e insignia de combo */}
               <div className="flex items-center justify-between w-full">
-                <div className="p-2 rounded-2xl bg-white/80 backdrop-blur-xs shadow-xs">
-                  {renderItemIcon(item.icono, item.color)}
+                <div className="p-1.5 rounded-xl bg-white/85 shadow-xs">
+                  <ItemIcon icono={item.icono} color={item.color} className="w-7 h-7" />
                 </div>
-                {item.es_combo && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black tracking-wide bg-purple-600 text-white uppercase shadow-xs">
+                {soldQty > 0 && (
+                  <span className="rounded-full bg-stone-900 text-white text-sm font-black px-2.5 py-0.5">
+                    ×{soldQty}
+                  </span>
+                )}
+                {item.es_combo && soldQty === 0 && (
+                  <span className="rounded-full bg-purple-700 text-white text-xs font-black px-2 py-0.5">
                     ★ COMBO
                   </span>
                 )}
               </div>
 
-              {/* Título de la categoría */}
-              <div className="w-full text-left my-auto">
-                <h2 className="text-xl font-extrabold tracking-tight text-stone-900 leading-tight">
+              <div className="w-full">
+                <h2 className="text-lg font-extrabold tracking-tight text-stone-900 leading-tight truncate">
                   {item.nombre.replace('Paleta de ', '')}
                 </h2>
-                {item.es_combo && (
-                  <p className="text-[11px] font-semibold text-purple-700 leading-none mt-0.5">
-                    1 Agua + 1 Crema
+                {item.es_combo && item.componentes && (
+                  <p className="text-sm font-semibold text-purple-800 leading-tight truncate">
+                    {item.componentes.map((c) => `${c.cant ?? c.cantidad ?? 1} ${nameOf(c.id).replace('Paleta de ', '')}`).join(' + ')}
                   </p>
                 )}
               </div>
 
-              {/* Pie de la tarjeta: Precio gigante */}
-              <div className="flex items-end justify-between w-full mt-1">
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">
-                  1 Toque
-                </span>
+              <div className="flex items-end justify-between w-full">
                 <span
-                  className={`px-3 py-1 rounded-xl text-lg font-black tracking-tight shadow-xs ${priceBadgeClass}`}
+                  className={`text-sm font-bold ${lowStock ? 'text-rose-700' : 'text-stone-600'}`}
                 >
+                  {left === null ? '' : `Quedan ${left}`}
+                </span>
+                <span className="px-2.5 py-0.5 rounded-xl text-xl font-black tracking-tight bg-stone-900 text-white">
                   ${item.precio}
                 </span>
               </div>
