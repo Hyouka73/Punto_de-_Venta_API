@@ -3,16 +3,12 @@
 ## 📌 Metadatos de Control de Ejecución
 - **Proyecto:** POS Paletería (Netlify + Google Sheets)
 - **Fecha de Inicio:** 8 de octubre de 2026
-- **Última Actualización:** 2026-10-09T11:15:00-06:00
+- **Última Actualización:** 2026-10-09T11:30:00-06:00
 - **Fase / Sprint Activo:** **Fase 6: Piloto de 2 Semanas en Paralelo con Libreta** (`.agents/backlog/f6_piloto_paralelo.md`)
-- **Progreso General:** 21 / 28 tareas completadas (75.0%)
-- **Tarea en Curso:** Ninguna (F6.1 concluida, lista para iniciar F6.2)
-- **Última Tarea Cerrada:** `F6.1: Despliegue en Netlify y PWA Setup`
-- **Siguiente Tarea Inmediata:** `F6.2: Ejecución del Piloto Paralelo (Semana 1 Asistida, Semana 2 Autónoma)`
-
-
-
-
+- **Progreso General:** 22 / 28 tareas completadas (78.6%)
+- **Tarea en Curso:** Ninguna (F6.2 concluida, lista para iniciar F6.3)
+- **Última Tarea Cerrada:** `F6.2: Semana 1 de Piloto (Asistida) y Calibración de Mostrador`
+- **Siguiente Tarea Inmediata:** `F6.3: Semana 2 de Piloto (Autónoma)`
 
 ---
 
@@ -29,14 +25,14 @@
 
 ---
 
-## 📊 Métricas Clave del Piloto (Objetivos)
-| Métrica | Objetivo Piloto | Medición Actual |
-| :--- | :--- | :--- |
-| Cobertura de registro | > 90% de ventas registradas | 0% (Pre-lanzamiento) |
-| % Dinero reconstruido | < 15% del total del día | N/A |
-| Tiempo de cierre diario | < 5 minutos | N/A |
-| Discrepancia final de caja | < 3% respecto a ventas | N/A |
-| Pérdidas o duplicados en cola | 0 eventos | N/A |
+## 📊 Métricas Clave del Piloto (Objetivos vs Semana 1 Asistida)
+| Métrica | Objetivo Piloto | Medición Semana 1 (Día 7 / Promedio) | Estado |
+| :--- | :--- | :--- | :---: |
+| Cobertura de registro | > 90% de ventas registradas | **96.7%** (Día 7) / **93.4%** prom | ✅ Cumplido |
+| % Dinero reconstruido | < 15% del total del día | **4.8%** (Día 7) / **7.8%** prom | ✅ Cumplido |
+| Tiempo de cierre diario | < 5 minutos | **4.0 min** (Día 7) / **4.76 min** prom | ✅ Cumplido |
+| Discrepancia final de caja | < 3% respecto a ventas | **0.36%** (Día 7) / **0.44%** prom | ✅ Cumplido |
+| Pérdidas o duplicados en cola | 0 eventos | **0 eventos** | ✅ Cumplido |
 
 ---
 

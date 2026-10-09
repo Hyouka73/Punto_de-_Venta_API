@@ -120,9 +120,10 @@
   - Desplegar frontend estático en Netlify bajo subdominio con HTTPS.
   - Instalación de PWA en teléfono de mostrador y teléfono de supervisora (`docs/GUIA_PILOTO_PARALELO.md`).
   - *Criterio de Aceptación:* Icono en pantalla de inicio y ejecución a pantalla completa en modo offline.
-- [ ] **F6.2: Ejecución del Piloto Paralelo (Semana 1 Asistida, Semana 2 Autónoma)**
-  - Seguimiento diario de las 4 hipótesis y recolección de métricas.
-  - *Criterio de Aceptación:* 5 días consecutivos cumpliendo los criterios de salida de la Sección 13.
+- [ ] **F6.2: Ejecución del Piloto Paralelo**
+  - [x] **F6.2.1: Semana 1 de Piloto (Asistida) y Calibración** (`docs/BITACORA_SEMANA_1_ASISTIDA.md`, `src/domain/pilot/`).
+  - [ ] **F6.2.2: Semana 2 de Piloto (Autónoma)** (Operación independiente y cierre <5 min).
+  - [ ] **F6.2.3: Medición de Criterios de Salida para Retiro de Libreta** (5 días consecutivos en umbrales de éxito).
 
 ---
 
