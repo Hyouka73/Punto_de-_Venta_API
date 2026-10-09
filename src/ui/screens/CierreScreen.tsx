@@ -24,6 +24,7 @@ import type { Movimiento, CierreResumen } from '@/domain/types';
 import type { CloseJornadaDTO } from '@/domain/ports/IDataAdapter';
 import { reconcileClosing } from '@/domain/rules/reconcileClosing';
 import { triggerHaptic } from '../utils/haptics';
+import { ItemIcon } from '../utils/itemIcons';
 
 export interface CierreScreenProps {
   readonly jornadaId: string;
@@ -46,18 +47,19 @@ export interface CierreScreenProps {
 }
 
 type PasoCierre = 1 | 2 | 3 | 4;
+type ModoConteo = 'vendidas' | 'sobrante';
 
 const DENOMINACIONES_BILLETES = [500, 200, 100, 50, 20] as const;
 const DENOMINACIONES_MONEDAS = [10, 5, 2, 1] as const;
 
 /**
- * Pantalla 3: CIERRE GUIADO EN 4 PASOS (Cuadre Triple Matemático)
+ * Pantalla 3: CIERRE GUIADO EN 4 PASOS (Cuadre Triple Matemático Simplificado)
  *
- * Implementada según especificación Stitch y Reglas R9 a R13.
- * Paso 1: Conteo físico de restantes por categoría.
- * Paso 2: Conteo de efectivo en caja (desglose o total).
- * Paso 3: Revisión de resultados (3 cuadres, semáforo, propuesta de reconstrucción).
- * Paso 4: Confirmación con PIN de supervisora y celebración.
+ * Optimizado para permitir captura tanto por piezas vendidas en el día como por sobrante.
+ * - Modo Vendidas: "Hoy vendí 15 de agua, 2 de crema..." (directo de libreta o memoria).
+ * - Modo Sobrante: "¿Cuántas piezas quedan en el congelador?".
+ * - Entrada rápida de efectivo directo o por desglose.
+ * - Diagnóstico humano sin tecnicismos ni culpa.
  */
 export const CierreScreen: React.FC<CierreScreenProps> = ({
   jornadaId,
@@ -74,17 +76,91 @@ export const CierreScreen: React.FC<CierreScreenProps> = ({
   onCancel,
 }) => {
   const [paso, setPaso] = useState<PasoCierre>(1);
+  const [modoConteo, setModoConteo] = useState<ModoConteo>('vendidas');
 
-  // Paso 1: Restantes Físicos por categoría
+  // Paso 1: Restantes Físicos y Ventas Directas por categoría
   const physicalItems = catalog.filter((item) => item.controla_stock && item.activo);
   const [restantesFisicos, setRestantesFisicos] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {};
     for (const item of physicalItems) {
-      // Valor por defecto sugerido: lo que había en apertura
       initial[item.id] = inventarioInicial[item.id] ?? 0;
     }
     return initial;
   });
+
+  const [vendidasDirectas, setVendidasDirectas] = useState<Record<string, number>>(() => {
+    const initial: Record<string, number> = {};
+    for (const item of physicalItems) {
+      const disp = (inventarioInicial[item.id] ?? 0) + (entradas[item.id] ?? 0) - (mermas[item.id] ?? 0);
+      const rest = inventarioInicial[item.id] ?? 0;
+      initial[item.id] = Math.max(0, disp - rest);
+    }
+    return initial;
+  });
+
+  const getDisponible = (itemId: string) => {
+    return (inventarioInicial[itemId] ?? 0) + (entradas[itemId] ?? 0) - (mermas[itemId] ?? 0);
+  };
+
+  const getVendidas = (itemId: string) => {
+    if (modoConteo === 'vendidas') {
+      return vendidasDirectas[itemId] ?? 0;
+    }
+    const disp = getDisponible(itemId);
+    const rest = restantesFisicos[itemId] ?? 0;
+    return Math.max(0, disp - rest);
+  };
+
+  const handleVendidasDelta = (itemId: string, delta: number) => {
+    triggerHaptic(40);
+    setVendidasDirectas((prev) => {
+      const currentVendidas = prev[itemId] ?? 0;
+      const newVendidas = Math.max(0, currentVendidas + delta);
+      const disp = getDisponible(itemId);
+      const newRestante = Math.max(0, disp - newVendidas);
+      setRestantesFisicos((rPrev) => ({
+        ...rPrev,
+        [itemId]: newRestante,
+      }));
+      return {
+        ...prev,
+        [itemId]: newVendidas,
+      };
+    });
+  };
+
+  const handleVendidasDirect = (itemId: string, val: number) => {
+    const newVendidas = Math.max(0, val);
+    const disp = getDisponible(itemId);
+    const newRestante = Math.max(0, disp - newVendidas);
+
+    setVendidasDirectas((prev) => ({
+      ...prev,
+      [itemId]: newVendidas,
+    }));
+    setRestantesFisicos((prev) => ({
+      ...prev,
+      [itemId]: newRestante,
+    }));
+  };
+
+  // Stepper de restantes
+  const handleRestanteChange = (itemId: string, delta: number) => {
+    triggerHaptic(40);
+    const currentRest = restantesFisicos[itemId] ?? 0;
+    const newRest = Math.max(0, currentRest + delta);
+    const disp = getDisponible(itemId);
+    const newVendidas = Math.max(0, disp - newRest);
+
+    setRestantesFisicos((prev) => ({
+      ...prev,
+      [itemId]: newRest,
+    }));
+    setVendidasDirectas((prev) => ({
+      ...prev,
+      [itemId]: newVendidas,
+    }));
+  };
 
   // Paso 2: Desglose de Efectivo
   const [billetes, setBilletes] = useState<Record<number, number>>({
@@ -101,7 +177,7 @@ export const CierreScreen: React.FC<CierreScreenProps> = ({
     1: 0,
   });
   const [efectivoManual, setEfectivoManual] = useState<number | null>(null);
-  const [modoDesglose, setModoDesglose] = useState<boolean>(true);
+  const [modoDesglose, setModoDesglose] = useState<boolean>(false);
 
   // Paso 3: Reconstrucciones aceptadas
   const [reconstruccionesAceptadas, setReconstruccionesAceptadas] = useState<Record<string, boolean>>({});
@@ -114,6 +190,22 @@ export const CierreScreen: React.FC<CierreScreenProps> = ({
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [notaCierre, setNotaCierre] = useState<string>('');
+
+  // Cálculo de ventas del día según conteo / libreta
+  const ventasConteoTotal = useMemo(() => {
+    return physicalItems.reduce((acc, it) => {
+      const cant = getVendidas(it.id);
+      return acc + (cant * it.precio);
+    }, 0);
+  }, [physicalItems, restantesFisicos, inventarioInicial, entradas, mermas]);
+
+  const piezasVendidasTotal = useMemo(() => {
+    return physicalItems.reduce((acc, it) => acc + getVendidas(it.id), 0);
+  }, [physicalItems, restantesFisicos, inventarioInicial, entradas, mermas]);
+
+  const hayVentasEnMostrador = useMemo(() => {
+    return movimientos.some((m) => m.tipo === 'VENTA');
+  }, [movimientos]);
 
   // Cálculo de efectivo contado total
   const efectivoContadoCalculado = useMemo(() => {
@@ -130,6 +222,37 @@ export const CierreScreen: React.FC<CierreScreenProps> = ({
     return total;
   }, [billetes, monedas, modoDesglose, efectivoManual]);
 
+  // Inventario inicial y restantes consistentes para reconcileClosing
+  const inventarioAjustado = useMemo(() => {
+    const adjusted: Record<string, number> = { ...inventarioInicial };
+    if (modoConteo === 'vendidas') {
+      for (const item of physicalItems) {
+        const v = vendidasDirectas[item.id] ?? 0;
+        const actual = adjusted[item.id] ?? 0;
+        if (actual < v) {
+          adjusted[item.id] = v; // Si no se capturó inventario inicial, igualar al vendido
+        }
+      }
+    }
+    return adjusted;
+  }, [inventarioInicial, physicalItems, modoConteo, vendidasDirectas]);
+
+  const restantesAjustados = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const item of physicalItems) {
+      if (modoConteo === 'vendidas') {
+        const ap = inventarioAjustado[item.id] ?? 0;
+        const ent = entradas[item.id] ?? 0;
+        const mer = mermas[item.id] ?? 0;
+        const v = vendidasDirectas[item.id] ?? 0;
+        map[item.id] = Math.max(0, ap + ent - mer - v);
+      } else {
+        map[item.id] = restantesFisicos[item.id] ?? 0;
+      }
+    }
+    return map;
+  }, [physicalItems, modoConteo, inventarioAjustado, entradas, mermas, vendidasDirectas, restantesFisicos]);
+
   // Ejecución reactiva del Cuadre Triple (Paso 3)
   const resumen = useMemo(() => {
     return reconcileClosing({
@@ -137,10 +260,10 @@ export const CierreScreen: React.FC<CierreScreenProps> = ({
       fecha,
       usuarioCierre: 'Supervisora',
       fondoInicial,
-      inventarioInicial,
+      inventarioInicial: inventarioAjustado,
       entradas,
       mermas,
-      restantesFisicos,
+      restantesFisicos: restantesAjustados,
       movimientos,
       efectivoContado: efectivoContadoCalculado,
       parametros,
@@ -150,24 +273,43 @@ export const CierreScreen: React.FC<CierreScreenProps> = ({
     jornadaId,
     fecha,
     fondoInicial,
-    inventarioInicial,
+    inventarioAjustado,
     entradas,
     mermas,
-    restantesFisicos,
+    restantesAjustados,
     movimientos,
     efectivoContadoCalculado,
     parametros,
     catalog,
   ]);
 
-  // Stepper de restantes
-  const handleRestanteChange = (itemId: string, delta: number) => {
-    triggerHaptic(40);
-    setRestantesFisicos((prev) => ({
-      ...prev,
-      [itemId]: Math.max(0, (prev[itemId] ?? 0) + delta),
-    }));
-  };
+  // Total esperado en caja combinando fondo + ventas del día (sea por toques o libreta)
+  const totalEsperadoEnCaja = useMemo(() => {
+    if (modoConteo === 'vendidas') {
+      return fondoInicial + ventasConteoTotal;
+    }
+    if (!hayVentasEnMostrador) {
+      return fondoInicial + ventasConteoTotal;
+    }
+    const ventasExtra = resumen.detalles_por_categoria.reduce((acc, d) => {
+      const aceptada = reconstruccionesAceptadas[d.categoria_id] ?? false;
+      return aceptada && d.propuesta_reconstruccion > 0
+        ? acc + (d.propuesta_reconstruccion * d.precio_unitario)
+        : acc;
+    }, 0);
+    return fondoInicial + resumen.ventas_efectivo + ventasExtra;
+  }, [fondoInicial, ventasConteoTotal, modoConteo, hayVentasEnMostrador, resumen, reconstruccionesAceptadas]);
+
+  const diferenciaRealCaja = useMemo(() => {
+    return efectivoContadoCalculado - totalEsperadoEnCaja;
+  }, [efectivoContadoCalculado, totalEsperadoEnCaja]);
+
+  const semaforoHumano = useMemo(() => {
+    const diff = Math.abs(diferenciaRealCaja);
+    if (diff <= parametros.tolerancia_verde) return 'VERDE';
+    if (diff <= parametros.tolerancia_ambar) return 'AMBAR';
+    return 'ROJO';
+  }, [diferenciaRealCaja, parametros]);
 
   // Cambio en desglose de efectivo
   const handleDenomChange = (tipo: 'billete' | 'moneda', denom: number, delta: number) => {
@@ -190,13 +332,15 @@ export const CierreScreen: React.FC<CierreScreenProps> = ({
     if (isLockedOut || pinDigits.length >= 4) return;
     triggerHaptic(40);
 
-    const nextDigits = pinDigits + digit;
-    setPinDigits(nextDigits);
-    setPinError(null);
-
-    if (nextDigits.length === 4) {
-      validateAndConfirmCierre(nextDigits);
-    }
+    setPinDigits((prev) => {
+      if (prev.length >= 4) return prev;
+      const nextDigits = prev + digit;
+      setPinError(null);
+      if (nextDigits.length === 4) {
+        validateAndConfirmCierre(nextDigits);
+      }
+      return nextDigits;
+    });
   };
 
   const handlePinDelete = () => {
@@ -212,7 +356,10 @@ export const CierreScreen: React.FC<CierreScreenProps> = ({
       try {
         const reconstruccionesDTO: Record<string, number> = {};
         for (const detalle of resumen.detalles_por_categoria) {
-          if (reconstruccionesAceptadas[detalle.categoria_id] && detalle.propuesta_reconstruccion > 0) {
+          // Si no hubo toques en mostrador o el usuario activó la reconstrucción:
+          const isAceptada =
+            reconstruccionesAceptadas[detalle.categoria_id] ?? (!hayVentasEnMostrador || modoConteo === 'vendidas');
+          if (isAceptada && detalle.propuesta_reconstruccion > 0) {
             reconstruccionesDTO[detalle.categoria_id] = detalle.propuesta_reconstruccion;
           }
         }
@@ -334,59 +481,191 @@ export const CierreScreen: React.FC<CierreScreenProps> = ({
       {/* ─── CONTENIDO DINÁMICO POR PASO ─── */}
       <main className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {/* ══════════════════════════════════════════════════
-            PASO 1: CONTEO FÍSICO DE RESTANTES
+            PASO 1: CONTEO FÍSICO (VENDIDAS O RESTANTES)
             ══════════════════════════════════════════════════ */}
         {paso === 1 && (
-          <div className="space-y-4">
-            <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-3 flex items-start gap-2.5">
-              <Layers className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <h3 className="text-xs font-bold text-amber-900">
+          <div className="space-y-3.5">
+            <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300/80 rounded-3xl p-3.5 flex items-start gap-3 shadow-xs">
+              <div className="w-9 h-9 rounded-2xl bg-amber-500/10 text-amber-700 flex items-center justify-center shrink-0">
+                <Layers className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-display text-sm font-black text-amber-950">
                   Paso 1: ¿Cuántas piezas quedan en el congelador?
                 </h3>
-                <p className="text-[11px] text-amber-800 mt-0.5">
-                  Cuenta físicamente las piezas restantes en mostrador por categoría.
+                <p className="text-xs text-amber-900/80 mt-0.5">
+                  Puedes registrar cuántas se vendieron en el día (de tu libreta o notas) o cuántas sobraron físicamente en el congelador.
                 </p>
               </div>
             </div>
 
-            <div className="space-y-3">
+            {/* Selector de Modo de Captura: Vendidas Hoy vs Sobrantes */}
+            <div className="flex bg-stone-200/80 p-1 rounded-2xl gap-1">
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic(30);
+                  setModoConteo('vendidas');
+                }}
+                className={`flex-1 py-2.5 rounded-xl font-display text-xs font-black transition-all ${
+                  modoConteo === 'vendidas'
+                    ? 'bg-amber-500 text-white shadow-xs'
+                    : 'text-stone-600 hover:text-stone-900'
+                }`}
+              >
+                📝 Ingresar lo que vendí hoy
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic(30);
+                  setModoConteo('sobrante');
+                }}
+                className={`flex-1 py-2.5 rounded-xl font-display text-xs font-black transition-all ${
+                  modoConteo === 'sobrante'
+                    ? 'bg-amber-500 text-white shadow-xs'
+                    : 'text-stone-600 hover:text-stone-900'
+                }`}
+              >
+                ❄️ Ingresar lo que sobró
+              </button>
+            </div>
+
+            {/* Lista de Productos para Conteo */}
+            <div className="space-y-2.5">
               {physicalItems.map((item) => {
-                const cant = restantesFisicos[item.id] ?? 0;
+                const disp = getDisponible(item.id);
+                const cantRestante = restantesFisicos[item.id] ?? 0;
+                const cantVendida = getVendidas(item.id);
+                const subtotalDinero = cantVendida * item.precio;
+
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between p-3 rounded-2xl bg-white border border-stone-200 shadow-sm"
+                    className="p-3 rounded-2xl bg-white border border-stone-200 shadow-xs flex flex-col gap-2"
                   >
-                    <div>
-                      <div className="font-extrabold text-stone-800 text-sm">{item.nombre}</div>
-                      <div className="text-xs text-stone-400">
-                        Apertura: {inventarioInicial[item.id] ?? 0} pzas
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className="w-10 h-10 rounded-2xl flex items-center justify-center border border-white"
+                          style={{
+                            background: `linear-gradient(135deg, #FFFFFF 0%, ${item.color}35 100%)`,
+                            boxShadow: `0 2px 8px ${item.color}30`,
+                          }}
+                        >
+                          <ItemIcon icono={item.icono} color={item.color} className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="font-display font-extrabold text-stone-900 text-sm">
+                            {item.nombre.replace('Paleta de ', '')}
+                          </div>
+                          <div className="text-[11px] font-semibold text-stone-400">
+                            Disponibles: <span className="font-bold text-stone-700">{disp}</span> · ${item.precio} c/u
+                          </div>
+                        </div>
                       </div>
+
+                      {/* Contador interactivo según modo */}
+                      {modoConteo === 'vendidas' ? (
+                        <div className="flex items-center gap-1 bg-stone-50 p-1 rounded-2xl border border-stone-200/80">
+                          <button
+                            type="button"
+                            onClick={() => handleVendidasDelta(item.id, -1)}
+                            className="w-9 h-9 rounded-xl bg-white active:bg-stone-200 text-stone-700 flex items-center justify-center font-black text-base shadow-xs"
+                            title="Menos 1"
+                          >
+                            <Minus className="w-4 h-4" />
+                          </button>
+                          <input
+                            type="number"
+                            min="0"
+                            max={disp}
+                            value={cantVendida}
+                            onChange={(e) => handleVendidasDirect(item.id, Number(e.target.value) || 0)}
+                            className="w-12 text-center font-display text-base font-black text-stone-900 bg-transparent focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleVendidasDelta(item.id, 1)}
+                            className="w-9 h-9 rounded-xl bg-amber-500 active:bg-amber-600 text-white flex items-center justify-center font-black text-base shadow-xs"
+                            title="Más 1"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleVendidasDelta(item.id, 5)}
+                            className="px-2 h-9 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-display font-black text-xs flex items-center justify-center active:scale-95"
+                            title="Más 5 piezas"
+                          >
+                            +5
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleVendidasDelta(item.id, 10)}
+                            className="px-2 h-9 rounded-xl bg-orange-100 hover:bg-orange-200 text-orange-950 font-display font-black text-xs flex items-center justify-center active:scale-95"
+                            title="Más 10 piezas"
+                          >
+                            +10
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 bg-stone-50 p-1 rounded-2xl border border-stone-200/80">
+                          <button
+                            type="button"
+                            onClick={() => handleRestanteChange(item.id, -1)}
+                            className="w-9 h-9 rounded-xl bg-white active:bg-stone-200 text-stone-700 flex items-center justify-center font-black text-base shadow-xs"
+                          >
+                            <Minus className="w-4 h-4" />
+                          </button>
+                          <span className="w-12 text-center font-display text-base font-black text-stone-900">
+                            {cantRestante}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRestanteChange(item.id, 1)}
+                            className="w-9 h-9 rounded-xl bg-amber-500 text-white active:bg-amber-600 flex items-center justify-center font-black text-base shadow-xs"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="flex items-center gap-1.5 bg-stone-50 p-1 rounded-2xl border border-stone-200">
-                      <button
-                        type="button"
-                        onClick={() => handleRestanteChange(item.id, -1)}
-                        className="w-10 h-10 rounded-xl bg-white active:bg-stone-100 text-stone-700 flex items-center justify-center font-bold text-lg shadow-sm"
-                      >
-                        <Minus className="w-5 h-5" />
-                      </button>
-                      <span className="w-12 text-center text-lg font-black text-stone-900">
-                        {cant}
+                    {/* Fila informativa de resumen por producto */}
+                    <div className="flex items-center justify-between pt-1 border-t border-stone-100 text-[11px]">
+                      <span className="text-stone-500">
+                        {modoConteo === 'vendidas'
+                          ? `Quedan ${cantRestante} en congelador`
+                          : `Vendidas calculadas: ${cantVendida} pzas`}
                       </span>
-                      <button
-                        type="button"
-                        onClick={() => handleRestanteChange(item.id, 1)}
-                        className="w-10 h-10 rounded-xl bg-amber-500 text-white active:bg-amber-600 flex items-center justify-center font-bold text-lg shadow-sm"
-                      >
-                        <Plus className="w-5 h-5" />
-                      </button>
+                      <span className="font-bold text-amber-800">
+                        {cantVendida} vendidas = ${subtotalDinero} MXN
+                      </span>
                     </div>
                   </div>
                 );
               })}
+            </div>
+
+            {/* Tarjeta de Resumen Rápido del Paso 1 */}
+            <div className="p-3.5 rounded-2xl bg-white border border-amber-200 shadow-xs flex items-center justify-between">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-stone-400">
+                  Total del Día Calculado
+                </span>
+                <div className="font-display text-base font-black text-stone-900">
+                  {physicalItems.reduce((acc, it) => acc + getVendidas(it.id), 0)} piezas vendidas
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] font-black uppercase tracking-wider text-stone-400">
+                  Dinero en Ventas
+                </span>
+                <div className="font-display text-lg font-black text-emerald-700">
+                  ${physicalItems.reduce((acc, it) => acc + (getVendidas(it.id) * it.precio), 0)} MXN
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -403,7 +682,7 @@ export const CierreScreen: React.FC<CierreScreenProps> = ({
                   Paso 2: Conteo de Dinero Físico en Caja
                 </h3>
                 <p className="text-[11px] text-emerald-800 mt-0.5">
-                  Ingresa billetes y monedas. Fondo inicial: ${fondoInicial.toFixed(2)} MXN.
+                  Fondo de apertura: ${fondoInicial.toFixed(2)} + Ventas calculadas: ${ventasConteoTotal.toFixed(2)} = Esperado en caja: <strong>${totalEsperadoEnCaja.toFixed(2)} MXN</strong>
                 </p>
               </div>
             </div>
@@ -414,47 +693,91 @@ export const CierreScreen: React.FC<CierreScreenProps> = ({
                 <span className="text-xs font-bold text-stone-400 uppercase tracking-wider">
                   Total en Caja
                 </span>
-                <div className="text-2xl font-black text-emerald-700">
+                <div className="font-display text-2xl font-black text-emerald-700">
                   ${efectivoContadoCalculado.toFixed(2)}{' '}
                   <span className="text-xs font-bold text-stone-500">MXN</span>
                 </div>
               </div>
               <div className="text-right">
                 <span className="text-[11px] font-semibold text-stone-400 block">
-                  Efectivo Neto (sin fondo):
+                  Esperado total en caja:
                 </span>
-                <span className="text-sm font-extrabold text-stone-700">
-                  ${(efectivoContadoCalculado - fondoInicial).toFixed(2)} MXN
+                <span className="font-display text-sm font-extrabold text-stone-700">
+                  ${totalEsperadoEnCaja.toFixed(2)} MXN
                 </span>
               </div>
             </div>
 
-            {/* Selector de Modo: Desglose vs Directo */}
+            {/* Selector de Modo: Monto Directo vs Desglose */}
             <div className="flex bg-stone-200 p-1 rounded-2xl">
-              <button
-                type="button"
-                onClick={() => setModoDesglose(true)}
-                className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  modoDesglose ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600'
-                }`}
-              >
-                Por Billetes y Monedas
-              </button>
               <button
                 type="button"
                 onClick={() => {
                   setModoDesglose(false);
                   if (efectivoManual === null) setEfectivoManual(efectivoContadoCalculado);
                 }}
-                className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${
                   !modoDesglose ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600'
                 }`}
               >
-                Monto Directo
+                💵 Monto Directo en Caja
+              </button>
+              <button
+                type="button"
+                onClick={() => setModoDesglose(true)}
+                className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${
+                  modoDesglose ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-600'
+                }`}
+              >
+                🪙 Desglose Billetes/Monedas
               </button>
             </div>
 
-            {modoDesglose ? (
+            {!modoDesglose ? (
+              <div className="bg-white rounded-3xl p-5 border border-stone-200 shadow-sm space-y-4">
+                <label className="block text-xs font-bold text-stone-500">
+                  ¿Cuánto dinero en total contaste en el cajón de dinero?
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-3 text-stone-400 font-display font-black text-2xl">$</span>
+                  <input
+                    type="number"
+                    value={efectivoManual ?? ''}
+                    onChange={(e) => setEfectivoManual(Number(e.target.value) || 0)}
+                    placeholder="0.00"
+                    className="w-full pl-9 pr-4 py-3 font-display text-3xl font-black rounded-2xl border-2 border-emerald-400 bg-emerald-50/20 text-stone-900 focus:outline-none focus:ring-4 focus:ring-emerald-500/20"
+                  />
+                </div>
+
+                {/* Atajos de suma rápida */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold text-stone-400">Atajos rápidos:</span>
+                  {[50, 100, 200, 500].map((val) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic(30);
+                        setEfectivoManual((prev) => (prev ?? 0) + val);
+                      }}
+                      className="px-2.5 py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-display font-black text-xs active:scale-95"
+                    >
+                      +${val}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic(30);
+                      setEfectivoManual(0);
+                    }}
+                    className="px-2 py-1.5 rounded-xl bg-rose-50 text-rose-700 font-bold text-xs ml-auto"
+                  >
+                    Borrar
+                  </button>
+                </div>
+              </div>
+            ) : (
               <div className="space-y-3">
                 {/* Billetes */}
                 <div className="bg-white rounded-2xl p-3 border border-stone-200 shadow-sm">
@@ -530,22 +853,6 @@ export const CierreScreen: React.FC<CierreScreenProps> = ({
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="bg-white rounded-3xl p-4 border border-stone-200 shadow-sm space-y-3">
-                <label className="block text-xs font-bold text-stone-500">
-                  Ingresa el monto total contado:
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-stone-400 font-bold text-lg">$</span>
-                  <input
-                    type="number"
-                    value={efectivoManual ?? ''}
-                    onChange={(e) => setEfectivoManual(Number(e.target.value) || 0)}
-                    placeholder="0.00"
-                    className="w-full pl-8 pr-3 py-2 text-xl font-black rounded-xl border border-stone-300 bg-stone-50 text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-              </div>
             )}
           </div>
         )}
@@ -555,38 +862,122 @@ export const CierreScreen: React.FC<CierreScreenProps> = ({
             ══════════════════════════════════════════════════ */}
         {paso === 3 && (
           <div className="space-y-4">
-            {/* Gran Insignia de Semáforo */}
+            {/* Gran Insignia de Semáforo Humano */}
             <div
-              className={`p-4 rounded-3xl border flex items-center gap-3.5 shadow-sm ${
-                resumen.semaforo === 'VERDE'
+              className={`p-4 rounded-3xl border flex items-center gap-3.5 shadow-sm transition-all ${
+                semaforoHumano === 'VERDE'
                   ? 'bg-emerald-500/10 border-emerald-500 text-emerald-800'
-                  : resumen.semaforo === 'AMBAR'
+                  : semaforoHumano === 'AMBAR'
                   ? 'bg-amber-500/10 border-amber-500 text-amber-800'
                   : 'bg-rose-500/10 border-rose-500 text-rose-800'
               }`}
             >
-              {resumen.semaforo === 'VERDE' && <CheckCircle2 className="w-9 h-9 text-emerald-600 shrink-0" />}
-              {resumen.semaforo === 'AMBAR' && <AlertTriangle className="w-9 h-9 text-amber-600 shrink-0" />}
-              {resumen.semaforo === 'ROJO' && <XCircle className="w-9 h-9 text-rose-600 shrink-0" />}
+              {semaforoHumano === 'VERDE' && <CheckCircle2 className="w-10 h-10 text-emerald-600 shrink-0" />}
+              {semaforoHumano === 'AMBAR' && <AlertTriangle className="w-10 h-10 text-amber-600 shrink-0" />}
+              {semaforoHumano === 'ROJO' && <XCircle className="w-10 h-10 text-rose-600 shrink-0" />}
 
               <div>
                 <span className="text-[11px] font-black tracking-wider uppercase">
-                  Semáforo {resumen.semaforo}
+                  Semáforo {semaforoHumano}
                 </span>
-                <h3 className="text-base font-black leading-tight">
-                  {resumen.semaforo === 'VERDE'
-                    ? 'Cuadre Exitoso (Dentro de Tolerancia)'
-                    : resumen.semaforo === 'AMBAR'
-                    ? 'Atención: Diferencia Moderada'
+                <h3 className="font-display text-base font-black leading-tight">
+                  {semaforoHumano === 'VERDE'
+                    ? '¡Caja Cuadrada Perfectamente!'
+                    : semaforoHumano === 'AMBAR'
+                    ? 'Atención: Diferencia Menor en Caja'
                     : 'Discrepancia Importante en Caja'}
                 </h3>
+                <p className="text-xs mt-0.5 opacity-90">
+                  {semaforoHumano === 'VERDE'
+                    ? 'El dinero en caja coincide con las ventas del día y el fondo de cambio.'
+                    : `Diferencia de ${diferenciaRealCaja >= 0 ? '+' : ''}$${diferenciaRealCaja.toFixed(2)} MXN entre lo contado y lo vendido.`}
+                </p>
               </div>
             </div>
 
-            {/* Las 3 Tarjetas del Cuadre Triple (R10) */}
-            <div className="space-y-2.5">
+            {/* Cuentas Claras del Día (Resumen Sencillo para Cualquier Persona) */}
+            <div className="bg-white rounded-3xl p-4 border border-stone-200 shadow-sm space-y-2.5">
+              <span className="text-[10px] font-black uppercase tracking-wider text-stone-400">
+                Resumen de Cuentas del Día
+              </span>
+
+              <div className="space-y-1.5 text-xs">
+                <div className="flex items-center justify-between py-1 border-b border-stone-100">
+                  <span className="text-stone-600 flex items-center gap-1.5 font-medium">
+                    <span>🍦</span> Ventas del día ({piezasVendidasTotal} pzas):
+                  </span>
+                  <span className="font-display font-black text-stone-900">
+                    ${ventasConteoTotal.toFixed(2)} MXN
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between py-1 border-b border-stone-100">
+                  <span className="text-stone-600 flex items-center gap-1.5 font-medium">
+                    <span>🪙</span> Fondo inicial de cambio:
+                  </span>
+                  <span className="font-display font-black text-stone-700">
+                    +${fondoInicial.toFixed(2)} MXN
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between py-1.5 bg-amber-50/60 px-2 rounded-xl">
+                  <span className="font-bold text-amber-950 flex items-center gap-1.5">
+                    <span>🎯</span> Total que debe haber en caja:
+                  </span>
+                  <span className="font-display font-black text-amber-900 text-sm">
+                    ${totalEsperadoEnCaja.toFixed(2)} MXN
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between py-1.5 bg-stone-50 px-2 rounded-xl">
+                  <span className="font-bold text-stone-700 flex items-center gap-1.5">
+                    <span>💵</span> Total que contaste en caja:
+                  </span>
+                  <span className="font-display font-black text-emerald-700 text-sm">
+                    ${efectivoContadoCalculado.toFixed(2)} MXN
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between pt-1 font-bold">
+                  <span className="text-stone-500">Diferencia final:</span>
+                  <span
+                    className={`font-display text-sm font-black ${
+                      Math.abs(diferenciaRealCaja) <= parametros.tolerancia_verde
+                        ? 'text-emerald-700'
+                        : Math.abs(diferenciaRealCaja) <= parametros.tolerancia_ambar
+                        ? 'text-amber-700'
+                        : 'text-rose-700'
+                    }`}
+                  >
+                    {diferenciaRealCaja >= 0 ? '+' : ''}${diferenciaRealCaja.toFixed(2)} MXN
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Aviso Amigable de Ventas por Libreta o Lote */}
+            {(!hayVentasEnMostrador || modoConteo === 'vendidas') && piezasVendidasTotal > 0 && (
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300/80 rounded-2xl p-3 flex items-start gap-2.5">
+                <Sparkles className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div className="text-xs text-amber-950">
+                  <span className="font-bold block">
+                    ✨ Ventas por Libreta / Lote Reconocidas
+                  </span>
+                  <p className="mt-0.5 text-[11px] text-amber-900/90 leading-relaxed">
+                    Al confirmar, el sistema registrará automáticamente las {piezasVendidasTotal} piezas vendidas para que queden guardadas en tu reporte de ventas y el inventario quede al día.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Las 3 Tarjetas del Cuadre Triple (R10) para Auditoría */}
+            <div className="space-y-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-stone-400 block px-1">
+                Auditoría Técnica y Cuadre Triple (R10)
+              </span>
+
               {/* Tarjeta A: Piezas por Conteo */}
-              <div className="bg-white p-3 rounded-2xl border border-stone-200 shadow-sm flex items-center justify-between">
+              <div className="bg-white p-3 rounded-2xl border border-stone-200 shadow-xs flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
                     A
@@ -596,13 +987,13 @@ export const CierreScreen: React.FC<CierreScreenProps> = ({
                     <div className="text-[11px] text-stone-500">Salieron de congeladores</div>
                   </div>
                 </div>
-                <span className="text-base font-black text-stone-900">
+                <span className="text-base font-black text-stone-900 font-display">
                   {resumen.total_piezas_conteo} pzas
                 </span>
               </div>
 
               {/* Tarjeta B: Piezas por Toques */}
-              <div className="bg-white p-3 rounded-2xl border border-stone-200 shadow-sm flex items-center justify-between">
+              <div className="bg-white p-3 rounded-2xl border border-stone-200 shadow-xs flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-xs">
                     B
@@ -612,13 +1003,13 @@ export const CierreScreen: React.FC<CierreScreenProps> = ({
                     <div className="text-[11px] text-stone-500">Registradas en pantalla</div>
                   </div>
                 </div>
-                <span className="text-base font-black text-stone-900">
+                <span className="text-base font-black text-stone-900 font-display">
                   {resumen.total_piezas_toques} pzas
                 </span>
               </div>
 
               {/* Tarjeta C: Dinero en Caja vs Esperado */}
-              <div className="bg-white p-3 rounded-2xl border border-stone-200 shadow-sm flex items-center justify-between">
+              <div className="bg-white p-3 rounded-2xl border border-stone-200 shadow-xs flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xs">
                     C
@@ -631,7 +1022,7 @@ export const CierreScreen: React.FC<CierreScreenProps> = ({
                   </div>
                 </div>
                 <span
-                  className={`text-base font-black ${
+                  className={`text-base font-black font-display ${
                     Math.abs(resumen.diferencia_final) <= parametros.tolerancia_verde
                       ? 'text-emerald-700'
                       : Math.abs(resumen.diferencia_final) <= parametros.tolerancia_ambar
@@ -742,18 +1133,18 @@ export const CierreScreen: React.FC<CierreScreenProps> = ({
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-stone-500">Semáforo Final</span>
+                    <span className="text-xs font-bold text-stone-500">Semáforo de Cierre</span>
                     <span
-                      className={`text-xs font-extrabold px-2 py-0.5 rounded-full ${
-                        resumen.semaforo === 'VERDE'
+                      className={`text-xs font-extrabold px-2.5 py-0.5 rounded-full ${
+                        semaforoHumano === 'VERDE'
                           ? 'bg-emerald-100 text-emerald-800'
-                          : resumen.semaforo === 'AMBAR'
+                          : semaforoHumano === 'AMBAR'
                           ? 'bg-amber-100 text-amber-800'
                           : 'bg-rose-100 text-rose-800'
                       }`}
                     >
-                      {resumen.semaforo} ({resumen.diferencia_final >= 0 ? '+' : ''}$
-                      {resumen.diferencia_final.toFixed(2)})
+                      {semaforoHumano} ({diferenciaRealCaja >= 0 ? '+' : ''}$
+                      {diferenciaRealCaja.toFixed(2)} MXN)
                     </span>
                   </div>
                 </div>
@@ -767,17 +1158,22 @@ export const CierreScreen: React.FC<CierreScreenProps> = ({
                     type="text"
                     value={notaCierre}
                     onChange={(e) => setNotaCierre(e.target.value)}
-                    placeholder="Ej. Cuadre perfecto sin incidencias"
+                    placeholder="Ej. Cuadre perfecto, ventas anotadas en libreta"
                     className="w-full text-xs px-3 py-2.5 rounded-xl border border-stone-200 bg-white text-stone-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
 
                 {/* Teclado PIN en pantalla */}
                 <div className="bg-white rounded-3xl p-4 border border-stone-200 shadow-sm flex flex-col items-center">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Lock className="w-4 h-4 text-emerald-600" />
-                    <span className="text-xs font-bold text-stone-700">
-                      Ingresa PIN de Supervisora para firmar
+                  <div className="flex flex-col items-center gap-0.5 mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <Lock className="w-4 h-4 text-emerald-600" />
+                      <span className="text-xs font-bold text-stone-700">
+                        Ingresa PIN de Supervisora para firmar
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-stone-400 font-medium">
+                      (PIN por defecto: {supervisorPinExpected})
                     </span>
                   </div>
 
