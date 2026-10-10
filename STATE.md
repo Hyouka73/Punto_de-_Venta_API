@@ -3,13 +3,13 @@
 ## 📌 Metadatos de Control de Ejecución
 - **Proyecto:** POS Paletería (Netlify + Google Sheets)
 - **Fecha de Inicio:** 8 de octubre de 2026
-- **Última Actualización:** 2026-10-10T09:40:00-06:00
-- **Fase / Sprint Activo:** **Refinamiento Local: Conectividad Sheets & Estabilidad** — **ACTIVO EN LOCAL (sin deploy a Netlify)**
-- **Progreso General:** 26 / 26 tareas completadas (100%) + Overhaul Responsivo y Safe-Area en 9 Pantallas
-- **Tarea en Curso:** Ninguna (Diseño responsivo móvil/escritorio y Safe Area verificado en vivo con Chrome DevTools MCP en localhost:5173)
-- **Última Tarea Cerrada (previa):** `[x] Cierre simplificado en 3 pasos (planClosing, restante precargado por toques, libreta, transferencias, RECONSTRUCCION al cerrar, 115/115 tests).`
-- **Anterior:** `[x] Overhaul Responsivo y Safe Area Insets: viewport-fit=cover, pt-safe/pb-safe en 9 pantallas, contenedor dynamic viewport (100dvh), grilla fluida escritorio/móvil y reubicación no obstructiva de Verificador Visual.`
-- **Siguiente Tarea Inmediata:** Pruebas interactivas en local con el usuario antes de cualquier despliegue futuro
+- **Última Actualización:** 2026-10-10T11:45:00-06:00
+- **Fase / Sprint Activo:** **Producción Activa en Netlify (PWA + Google Sheets)**
+- **Progreso General:** 26 / 26 tareas completadas (100%) + Overhaul Responsivo + Cierre en 3 Pasos + Despliegue Netlify Prod
+- **Tarea en Curso:** Ninguna (Producción en vivo en https://pos-paleteria-v2.netlify.app)
+- **Última Tarea Cerrada:** `[x] Despliegue a Netlify en Producción: consumo automático de .env en lugar de configuración manual, variables importadas en Netlify CLI, commit e push en GitHub, y deploy live verificado.`
+- **Anterior:** `[x] Cierre simplificado en 3 pasos (planClosing, restante precargado por toques, libreta, transferencias, RECONSTRUCCION al cerrar, 115/115 tests).`
+- **Siguiente Tarea Inmediata:** Monitoreo y retroalimentación operativa en producción con Google Sheets.
 
 ---
 
