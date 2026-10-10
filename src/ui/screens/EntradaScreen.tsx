@@ -104,9 +104,9 @@ export const EntradaScreen: React.FC<EntradaScreenProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-screen w-full max-w-lg mx-auto bg-stone-50 select-none touch-manipulation overflow-hidden">
-      {/* ─── HEADER ─── */}
-      <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-stone-200 shadow-sm shrink-0">
+    <div className="flex flex-col h-full w-full bg-stone-50 select-none touch-manipulation overflow-hidden">
+      {/* ─── HEADER CON SAFE AREA ─── */}
+      <header className="flex items-center justify-between px-4 sm:px-6 py-3 bg-white border-b border-stone-200 shadow-sm shrink-0 pt-safe">
         <div className="flex items-center gap-2.5">
           <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shadow-inner">
             <PackagePlus className="w-6 h-6" />
@@ -137,7 +137,7 @@ export const EntradaScreen: React.FC<EntradaScreenProps> = ({
       </header>
 
       {/* ─── CONTENIDO PRINCIPAL ─── */}
-      <main className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4 max-w-2xl mx-auto w-full">
         {/* Banner de resumen del lote */}
         <div className="bg-amber-500 text-white rounded-3xl p-4 shadow-sm flex items-center justify-between">
           <div>
@@ -239,17 +239,19 @@ export const EntradaScreen: React.FC<EntradaScreenProps> = ({
         </div>
       </main>
 
-      {/* ─── FOOTER CON BOTÓN DE CONFIRMAR ─── */}
-      <footer className="p-4 bg-white border-t border-stone-200 shadow-lg shrink-0">
-        <button
-          type="button"
-          disabled={totalPiezas <= 0 || isSubmitting}
-          onClick={handleSubmit}
-          className="w-full h-14 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-black text-base rounded-2xl shadow-md shadow-emerald-600/30 flex items-center justify-center gap-2 transition-transform active:scale-[0.98] disabled:opacity-40"
-        >
-          <Check className="w-5 h-5" />
-          <span>Confirmar e Ingresar a Inventario</span>
-        </button>
+      {/* ─── FOOTER CON BOTÓN DE CONFIRMAR Y SAFE AREA ─── */}
+      <footer className="p-4 sm:p-5 bg-white border-t border-stone-200 shadow-lg shrink-0 pb-safe">
+        <div className="max-w-2xl mx-auto w-full">
+          <button
+            type="button"
+            disabled={totalPiezas <= 0 || isSubmitting}
+            onClick={handleSubmit}
+            className="w-full h-14 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-black text-base rounded-2xl shadow-md shadow-emerald-600/30 flex items-center justify-center gap-2 transition-transform active:scale-[0.98] disabled:opacity-40"
+          >
+            <Check className="w-5 h-5" />
+            <span>Confirmar e Ingresar a Inventario</span>
+          </button>
+        </div>
       </footer>
     </div>
   );

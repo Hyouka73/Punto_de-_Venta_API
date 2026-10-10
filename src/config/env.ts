@@ -40,7 +40,11 @@ function getRawEnvValue(key: string): string | undefined {
 export function loadAndValidateConfig(): AppConfig {
   const rawMode = (getRawEnvValue('VITE_APP_MODE') ?? 'LOCAL').toUpperCase();
   const appMode: AppMode =
-    rawMode === 'DEV' || rawMode === 'PROD' ? rawMode : 'LOCAL';
+    rawMode === 'PROD' || rawMode === 'PRODUCTION'
+      ? 'PROD'
+      : rawMode === 'DEV'
+      ? 'DEV'
+      : 'LOCAL';
 
   const rawAdapter = (getRawEnvValue('VITE_DATA_ADAPTER') ?? 'mock').toLowerCase();
   const dataAdapter: DataAdapterType =

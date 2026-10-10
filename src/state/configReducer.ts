@@ -2,6 +2,8 @@ import type { CatalogoItem, ParametrosNegocio } from '@/domain/config/types';
 import { DEFAULT_CATALOG } from '@/domain/config/defaultCatalog';
 import { DEFAULT_PARAMETERS } from '@/domain/config/parameters';
 
+import { ENV } from '@/config/env';
+
 export type AdapterMode = 'mock' | 'sheets';
 
 export interface ConfigState {
@@ -109,16 +111,30 @@ function readJson<T>(storage: StorageLike | null, key: string): T | null {
   }
 }
 
-/** Hidratación: localStorage → DEFAULT_* (semilla de primera ejecución). */
+/** Hidratación: localStorage → DEFAULT_* y variables de entorno .env */
 export function loadConfigState(storage: StorageLike | null): ConfigState {
   const catalog = readJson<CatalogoItem[]>(storage, LS_KEYS.catalog);
   const params = readJson<ParametrosNegocio>(storage, LS_KEYS.params);
-  const mode = storage?.getItem(LS_KEYS.adapterMode);
+  const storedMode = storage?.getItem(LS_KEYS.adapterMode);
+  const storedUrl = storage?.getItem(LS_KEYS.webappUrl);
+
+  // Prioridad: Si no hay valor en storage, o si el entorno define sheets, tomar ENV
+  const adapterMode: AdapterMode =
+    storedMode === 'sheets' || storedMode === 'mock'
+      ? (storedMode as AdapterMode)
+      : (ENV.dataAdapter as AdapterMode);
+
+  // Si storage tiene URL no vacía, usarla; de lo contrario consumir automáticamente ENV.sheetsWebappUrl
+  const webappUrl =
+    storedUrl && storedUrl.trim().length > 0
+      ? storedUrl
+      : ENV.sheetsWebappUrl || '';
+
   return {
     catalog: catalog && catalog.length > 0 ? normalizeOrder(catalog) : normalizeOrder(DEFAULT_CATALOG),
     params: params ? { ...DEFAULT_PARAMETERS, ...params } : DEFAULT_PARAMETERS,
-    adapterMode: mode === 'sheets' ? 'sheets' : 'mock',
-    webappUrl: storage?.getItem(LS_KEYS.webappUrl) ?? '',
+    adapterMode,
+    webappUrl,
   };
 }
 

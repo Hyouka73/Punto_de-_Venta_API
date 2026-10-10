@@ -79,7 +79,7 @@ export const LaboratorioScreen: React.FC<LaboratorioScreenProps> = ({ onBack }) 
   }
 
   const Content = (
-    <div className="min-h-screen w-full max-w-4xl mx-auto px-4 py-6 space-y-6">
+    <div className="h-full w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-6 pt-safe pb-safe">
       {/* Banner de Advertencia de Entorno DEV */}
       <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 shadow-sm flex items-start gap-3 text-amber-900">
         <AlertTriangle className="h-6 w-6 text-amber-600 shrink-0 mt-0.5" />

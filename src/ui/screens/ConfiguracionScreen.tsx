@@ -22,7 +22,11 @@ import {
   Database,
 } from 'lucide-react';
 import { DEFAULT_PARAMETERS } from '@/domain/config/parameters';
-import { SheetsAppsScriptAdapter } from '@/adapters/SheetsAppsScriptAdapter';
+import {
+  SheetsAppsScriptAdapter,
+  normalizeGoogleAppsScriptUrl,
+} from '@/adapters/SheetsAppsScriptAdapter';
+import { ENV } from '@/config/env';
 
 export interface ConfiguracionScreenProps {
   initialCatalog: readonly CatalogoItem[];
@@ -77,7 +81,7 @@ export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
   // Estado de Conexión a Google Sheets
   const [adapterMode, setAdapterMode] = useState<'mock' | 'sheets'>(initialAdapterMode);
   const [webappUrl, setWebappUrl] = useState<string>(
-    initialWebappUrl || ((import.meta.env.VITE_SHEETS_WEBAPP_URL as string) ?? '')
+    initialWebappUrl || ENV.sheetsWebappUrl || ''
   );
   const [newProduct, setNewProduct] = useState<typeof BLANK_PRODUCT | null>(null);
   const [newCombo, setNewCombo] = useState<{
@@ -99,8 +103,12 @@ export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
     triggerHaptic(40);
     setTestState({ testing: true });
     try {
-      const adapter = new SheetsAppsScriptAdapter({ webappUrl });
-      const res = await adapter.testConnection(webappUrl);
+      const normalized = normalizeGoogleAppsScriptUrl(webappUrl);
+      if (normalized && normalized !== webappUrl) {
+        setWebappUrl(normalized);
+      }
+      const adapter = new SheetsAppsScriptAdapter({ webappUrl: normalized || webappUrl });
+      const res = await adapter.testConnection(normalized || webappUrl);
       if (res.success) {
         triggerHaptic(60);
         setTestState({
@@ -192,8 +200,12 @@ export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
   // Guardar Cambios (UR3: el store persiste en localStorage y el adaptador se reconstruye)
   const handleSave = () => {
     triggerHaptic(60);
+    const normalized = normalizeGoogleAppsScriptUrl(webappUrl);
+    if (normalized && normalized !== webappUrl) {
+      setWebappUrl(normalized);
+    }
     if (onSaveConfig) {
-      onSaveConfig(catalogItems, params, adapterMode, webappUrl);
+      onSaveConfig(catalogItems, params, adapterMode, normalized || webappUrl);
     }
     setShowSavedToast(true);
     setTimeout(() => setShowSavedToast(false), 2500);
@@ -202,7 +214,7 @@ export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
   // ─── PANTALLA DE BLOQUEO POR PIN ADMIN ───
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen w-full bg-stone-100 flex flex-col justify-between max-w-sm mx-auto p-4 select-none">
+      <div className="h-full w-full bg-stone-100 flex flex-col justify-between max-w-md mx-auto p-4 sm:p-6 pt-safe pb-safe select-none">
         <div className="flex items-center justify-between">
           <button
             onClick={onBack}
@@ -289,9 +301,9 @@ export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
 
   // ─── PANTALLA DE CONFIGURACIÓN AUTENTICADA ───
   return (
-    <div className="min-h-screen w-full bg-stone-50 select-none flex flex-col justify-between max-w-lg mx-auto">
+    <div className="h-full w-full bg-stone-50 select-none flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-stone-200 bg-white px-4 py-3 shadow-xs">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-stone-200 bg-white px-4 sm:px-6 py-3 shadow-xs pt-safe">
         <button
           onClick={onBack}
           className="flex items-center gap-2 rounded-xl bg-stone-100 hover:bg-stone-200 px-3 py-1.5 text-xs font-semibold text-stone-700"
@@ -300,14 +312,14 @@ export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
           <span>Mostrador</span>
         </button>
 
-        <h1 className="text-sm font-extrabold text-stone-900 flex items-center gap-1.5">
+        <h1 className="text-sm sm:text-base font-extrabold text-stone-900 flex items-center gap-1.5">
           <Settings className="h-4 w-4 text-amber-500" />
           <span>Configuración Admin</span>
         </h1>
 
         <button
           onClick={handleSave}
-          className="flex items-center gap-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white px-3 py-1.5 text-xs font-bold active:scale-95 transition-all shadow-xs"
+          className="flex items-center gap-1.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-white px-3.5 py-1.5 text-xs font-bold active:scale-95 transition-all shadow-xs"
         >
           <Save className="h-3.5 w-3.5 text-amber-400" />
           <span>Guardar</span>
@@ -315,7 +327,7 @@ export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
       </header>
 
       {/* Tabs */}
-      <nav className="flex border-b border-stone-200 bg-white px-2 overflow-x-auto shrink-0">
+      <nav className="flex border-b border-stone-200 bg-white px-2 sm:px-6 overflow-x-auto shrink-0 no-scrollbar justify-start sm:justify-center gap-1">
         {[
           { id: 'catalogo', label: 'Catálogo', icon: Package },
           { id: 'combos', label: 'Combos', icon: Layers },
@@ -351,7 +363,7 @@ export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
       )}
 
       {/* Contenido de la pestaña */}
-      <main className="flex-1 p-4 space-y-4 overflow-y-auto">
+      <main className="flex-1 p-4 sm:p-6 space-y-4 overflow-y-auto max-w-4xl mx-auto w-full pb-safe">
         {/* Pestaña: Catálogo y Precios */}
         {activeTab === 'catalogo' && (
           <div className="space-y-3">
@@ -726,18 +738,50 @@ export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
             {/* Configuración de URL de Apps Script */}
             <div className="rounded-2xl border border-stone-200 bg-white p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <label className="font-bold text-xs text-stone-800">
-                  URL de Google Apps Script Web App
-                </label>
-                <span className="text-[10px] text-stone-400 font-mono">/exec</span>
+                <div className="flex items-center gap-2">
+                  <label className="font-bold text-xs text-stone-800">
+                    URL de Google Apps Script Web App
+                  </label>
+                  {ENV.sheetsWebappUrl && webappUrl === ENV.sheetsWebappUrl && (
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                      .env
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {ENV.sheetsWebappUrl && webappUrl !== ENV.sheetsWebappUrl && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic(30);
+                        setWebappUrl(ENV.sheetsWebappUrl);
+                      }}
+                      className="text-[10px] text-amber-700 hover:underline font-bold"
+                    >
+                      Restablecer al valor de .env
+                    </button>
+                  )}
+                  <span className="text-[10px] text-stone-400 font-mono">/exec</span>
+                </div>
               </div>
               <input
                 type="text"
                 placeholder="https://script.google.com/macros/s/.../exec"
                 value={webappUrl}
                 onChange={(e) => setWebappUrl(e.target.value)}
+                onBlur={() => {
+                  const normalized = normalizeGoogleAppsScriptUrl(webappUrl);
+                  if (normalized && normalized !== webappUrl) {
+                    setWebappUrl(normalized);
+                  }
+                }}
                 className="w-full rounded-xl border border-stone-200 px-3 py-2 text-xs font-mono text-stone-800 placeholder:text-stone-300 focus:border-amber-500 focus:outline-hidden"
               />
+              {webappUrl.startsWith('AKfycb') && (
+                <p className="text-[11px] text-amber-700 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200">
+                  ℹ️ Detectado ID de despliegue. Al probar o guardar se convertirá automáticamente a la URL completa.
+                </p>
+              )}
 
               {/* Botón de Probar Conexión */}
               <div className="pt-2 flex items-center justify-between gap-2">

@@ -25,6 +25,37 @@ export interface PinValidationResponse {
 }
 
 /**
+ * Normaliza y valida una URL o ID de despliegue de Google Apps Script.
+ * Acepta:
+ * - URL completa: https://script.google.com/macros/s/{id}/exec
+ * - URL sin /exec: https://script.google.com/macros/s/{id} -> agrega /exec
+ * - URL sin https://: script.google.com/macros/s/{id}/exec -> agrega https://
+ * - ID de despliegue puro: AKfycbw... -> https://script.google.com/macros/s/{id}/exec
+ */
+export function normalizeGoogleAppsScriptUrl(input: string): string {
+  if (!input) return '';
+  let url = input.trim();
+  if (!url) return '';
+
+  // Caso: ID puro de despliegue de Google Apps Script (inicia con AKfycb...)
+  if (/^AKfycb[a-zA-Z0-9_-]+$/.test(url)) {
+    return `https://script.google.com/macros/s/${url}/exec`;
+  }
+
+  // Caso: omite https://
+  if (url.startsWith('script.google.com/')) {
+    url = `https://${url}`;
+  }
+
+  // Caso: URL de Apps Script pero sin /exec al final (termina en id o en /)
+  if (url.includes('/macros/s/') && !url.endsWith('/exec')) {
+    url = url.replace(/\/+$/, '') + '/exec';
+  }
+
+  return url;
+}
+
+/**
  * Adaptador de Datos para Producción con Google Sheets + Google Apps Script (GAS).
  *
  * Se comunica con la Web App de Apps Script mediante solicitudes HTTP optimizadas:
@@ -38,9 +69,25 @@ export class SheetsAppsScriptAdapter implements IDataAdapter {
   private readonly timeoutMs: number;
 
   constructor(options: SheetsAppsScriptAdapterOptions = {}) {
-    this.webappUrl = options.webappUrl || ENV.sheetsWebappUrl;
-    this.fetchFn = options.fetchFn || (typeof globalThis !== 'undefined' ? globalThis.fetch : fetch);
-    this.timeoutMs = options.timeoutMs ?? 15000;
+    const rawUrl = options.webappUrl !== undefined ? options.webappUrl : ENV.sheetsWebappUrl;
+    this.webappUrl = normalizeGoogleAppsScriptUrl(rawUrl);
+    const scope = typeof globalThis !== 'undefined' ? globalThis : (typeof window !== 'undefined' ? window : null);
+    const rawFetch = options.fetchFn || (typeof globalThis !== 'undefined' ? globalThis.fetch : (typeof window !== 'undefined' ? window.fetch : fetch));
+    // Bindeo estricto al contexto global para evitar "Illegal invocation" en navegadores
+    this.fetchFn = scope && typeof rawFetch?.bind === 'function' ? rawFetch.bind(scope) : rawFetch;
+    this.timeoutMs = options.timeoutMs ?? 20000;
+  }
+
+  /**
+   * Invoca fetch garantizando que el contexto 'this' pertenezca a Window/globalThis
+   */
+  private async executeFetch(url: string, init?: RequestInit): Promise<Response> {
+    const scope = typeof globalThis !== 'undefined' ? globalThis : (typeof window !== 'undefined' ? window : null);
+    const fn = this.fetchFn || (typeof globalThis !== 'undefined' ? globalThis.fetch : fetch);
+    if (scope && typeof fn?.call === 'function') {
+      return fn.call(scope, url, init);
+    }
+    return fn(url, init);
   }
 
   /**
@@ -57,7 +104,7 @@ export class SheetsAppsScriptAdapter implements IDataAdapter {
     const timeoutId = setTimeout(() => controller.abort(), this.timeoutMs);
 
     try {
-      const response = await this.fetchFn(this.webappUrl, {
+      const response = await this.executeFetch(this.webappUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'text/plain;charset=utf-8', // Evita preflight CORS OPTIONS
@@ -240,7 +287,8 @@ export class SheetsAppsScriptAdapter implements IDataAdapter {
     itemCount?: number;
     error?: string;
   }> {
-    const targetUrl = overrideUrl || this.webappUrl;
+    const rawUrl = overrideUrl !== undefined ? overrideUrl : this.webappUrl;
+    const targetUrl = normalizeGoogleAppsScriptUrl(rawUrl);
     if (!targetUrl) {
       return {
         success: false,
@@ -252,9 +300,9 @@ export class SheetsAppsScriptAdapter implements IDataAdapter {
     const t0 = performance.now();
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-      const response = await this.fetchFn(targetUrl, {
+      const response = await this.executeFetch(targetUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({ action: 'GET_CATALOG' }),
@@ -282,7 +330,7 @@ export class SheetsAppsScriptAdapter implements IDataAdapter {
         return {
           success: false,
           latencyMs,
-          error: 'La respuesta del servidor no es un JSON válido',
+          error: 'La respuesta del servidor no es un JSON válido. Verifica la configuración de la Web App en Google Apps Script.',
         };
       }
 
@@ -300,10 +348,17 @@ export class SheetsAppsScriptAdapter implements IDataAdapter {
       };
     } catch (err: any) {
       const t1 = performance.now();
+      const latencyMs = Math.round(t1 - t0);
+      let errorMsg = err.message || 'Fallo de red al conectar con Google Apps Script';
+      if (err.name === 'AbortError') {
+        errorMsg = 'Tiempo de espera agotado (20s). Puede deberse al cold start inicial de Google Apps Script. Por favor reintenta.';
+      } else if (errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError')) {
+        errorMsg = 'No se pudo contactar a Google Apps Script (Failed to fetch). Verifica que en el despliegue de Apps Script el acceso esté configurado en: "Quién tiene acceso: Cualquier usuario" (Anyone).';
+      }
       return {
         success: false,
-        latencyMs: Math.round(t1 - t0),
-        error: err.message || 'Fallo de red al conectar con Google Apps Script',
+        latencyMs,
+        error: errorMsg,
       };
     }
   }

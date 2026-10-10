@@ -96,3 +96,20 @@ export function soldByProduct(movs: readonly Movimiento[]): Record<string, numbe
   }
   return out;
 }
+
+/** Stock vendible disponible para un ítem simple o combo según existencias actuales. */
+export function getAvailableStock(
+  item: CatalogoItem,
+  stockMap: Readonly<Record<string, number>>
+): number | null {
+  if (item.es_combo && item.componentes?.length) {
+    const capacities = item.componentes.map((c) => {
+      const required = c.cant ?? c.cantidad ?? 1;
+      const current = stockMap[c.id] ?? 0;
+      return Math.floor(current / required);
+    });
+    return Math.min(...capacities);
+  }
+  return item.controla_stock ? (stockMap[item.id] ?? 0) : null;
+}
+

@@ -35,7 +35,7 @@ describe('Pantalla de Cierre Guiado en 4 Pasos (F3.2) y los 10 Escenarios de Cie
      RENDERIZADO Y ESTRUCTURA DE LA PANTALLA
   ───────────────────────────────────────────────────────────── */
   describe('Renderizado de la interfaz CierreScreen', () => {
-    it('debe renderizar el encabezado con el ID de jornada y el indicador de 4 pasos', () => {
+    it('debe renderizar el encabezado con el ID de jornada y el indicador de 3 pasos', () => {
       const html = renderToStaticMarkup(
         React.createElement(CierreScreen, {
           jornadaId: 'JOR-2026-10-09-XYZ',
@@ -43,13 +43,23 @@ describe('Pantalla de Cierre Guiado en 4 Pasos (F3.2) y los 10 Escenarios de Cie
         })
       );
 
-      expect(html).toContain('Cierre Guiado en 4 Pasos');
+      expect(html).toContain('Cierre del Día');
       expect(html).toContain('JOR-2026-10-09-XYZ');
-      expect(html).toContain('1. Conteo');
-      expect(html).toContain('2. Efectivo');
-      expect(html).toContain('3. Resultados');
-      expect(html).toContain('4. Confirmar');
-      expect(html).toContain('Paso 1: ¿Cuántas piezas quedan en el congelador?');
+      expect(html).toContain('1. Congelador');
+      expect(html).toContain('2. Dinero');
+      expect(html).toContain('3. Revisar');
+      expect(html).toContain('Paso 1: ¿Cuántas paletas quedan?');
+    });
+
+    it('debe avisar que la jornada ya está cerrada cuando no hay jornada activa', () => {
+      const html = renderToStaticMarkup(
+        React.createElement(CierreScreen, {
+          jornadaId: 'JOR-X',
+          jornadaActiva: false,
+          onConfirmCierre: vi.fn(),
+        })
+      );
+      expect(html).toContain('La jornada ya está cerrada');
     });
   });
 

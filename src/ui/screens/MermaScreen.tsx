@@ -98,9 +98,9 @@ export const MermaScreen: React.FC<MermaScreenProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-screen w-full max-w-lg mx-auto bg-stone-50 select-none touch-manipulation overflow-hidden">
-      {/* ─── HEADER ─── */}
-      <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-stone-200 shadow-sm shrink-0">
+    <div className="flex flex-col h-full w-full bg-stone-50 select-none touch-manipulation overflow-hidden">
+      {/* ─── HEADER CON SAFE AREA ─── */}
+      <header className="flex items-center justify-between px-4 sm:px-6 py-3 bg-white border-b border-stone-200 shadow-sm shrink-0 pt-safe">
         <div className="flex items-center gap-2.5">
           <div className="w-10 h-10 rounded-2xl bg-rose-500/10 text-rose-600 flex items-center justify-center shadow-inner">
             <Trash2 className="w-6 h-6" />
@@ -131,13 +131,13 @@ export const MermaScreen: React.FC<MermaScreenProps> = ({
       </header>
 
       {/* ─── CONTENIDO PRINCIPAL ─── */}
-      <main className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4 max-w-2xl mx-auto w-full">
         {/* 1. SELECCIÓN DE MOTIVO (3 BOTONES GIGANTES) */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">
             1. Selecciona el motivo
           </label>
-          <div className="grid grid-cols-1 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             {/* Motivo 1: Palo Roto */}
             <button
               type="button"
@@ -305,17 +305,19 @@ export const MermaScreen: React.FC<MermaScreenProps> = ({
         </div>
       </main>
 
-      {/* ─── FOOTER CON BOTÓN DE GUARDAR ─── */}
-      <footer className="p-4 bg-white border-t border-stone-200 shadow-lg shrink-0">
-        <button
-          type="button"
-          disabled={isSubmitting}
-          onClick={handleSubmit}
-          className="w-full h-14 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-black text-base rounded-2xl shadow-md shadow-rose-600/30 flex items-center justify-center gap-2 transition-transform active:scale-[0.98] disabled:opacity-50"
-        >
-          <Check className="w-5 h-5" />
-          <span>Guardar Merma ({cantidad} pza{cantidad > 1 ? 's' : ''})</span>
-        </button>
+      {/* ─── FOOTER CON BOTÓN DE GUARDAR Y SAFE AREA ─── */}
+      <footer className="p-4 sm:p-5 bg-white border-t border-stone-200 shadow-lg shrink-0 pb-safe">
+        <div className="max-w-2xl mx-auto w-full">
+          <button
+            type="button"
+            disabled={isSubmitting}
+            onClick={handleSubmit}
+            className="w-full h-14 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-black text-base rounded-2xl shadow-md shadow-rose-600/30 flex items-center justify-center gap-2 transition-transform active:scale-[0.98] disabled:opacity-50"
+          >
+            <Check className="w-5 h-5" />
+            <span>Guardar Merma ({cantidad} pza{cantidad > 1 ? 's' : ''})</span>
+          </button>
+        </div>
       </footer>
     </div>
   );

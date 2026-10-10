@@ -172,9 +172,9 @@ export const AperturaScreen: React.FC<AperturaScreenProps> = ({
   const totalPiezasInicial = Object.values(stock).reduce((sum, val) => sum + val, 0);
 
   return (
-    <div className="flex flex-col h-screen w-full max-w-lg mx-auto bg-stone-50 select-none touch-manipulation overflow-hidden">
-      {/* ─── ENCABEZADO ─── */}
-      <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-stone-200 shadow-sm shrink-0">
+    <div className="flex flex-col h-full w-full bg-stone-50 select-none touch-manipulation overflow-hidden">
+      {/* ─── ENCABEZADO CON SAFE AREA ─── */}
+      <header className="flex items-center justify-between px-4 sm:px-6 py-3 bg-white border-b border-stone-200 shadow-sm shrink-0 pt-safe">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center shadow-inner">
             <Sun className="w-6 h-6 animate-spin-slow" />
@@ -204,7 +204,7 @@ export const AperturaScreen: React.FC<AperturaScreenProps> = ({
       </header>
 
       {/* ─── CONTENIDO SCROLLEABLE ─── */}
-      <main className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4 max-w-3xl mx-auto w-full">
         {/* Banner informativo R14 */}
         <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-3 flex items-start gap-2.5">
           <CheckCircle2 className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
@@ -332,16 +332,18 @@ export const AperturaScreen: React.FC<AperturaScreenProps> = ({
         </div>
       </main>
 
-      {/* ─── FOOTER CON BOTÓN DE ACCIÓN PRINCIPAL ─── */}
-      <footer className="p-4 bg-white border-t border-stone-200 shadow-lg shrink-0">
-        <button
-          type="button"
-          onClick={handleOpenPinModal}
-          className="w-full h-14 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-black text-lg rounded-2xl shadow-md shadow-emerald-600/30 flex items-center justify-center gap-2.5 transition-transform active:scale-[0.98]"
-        >
-          <ShieldCheck className="w-6 h-6" />
-          <span>Comenzar Ventas</span>
-        </button>
+      {/* ─── FOOTER CON BOTÓN DE ACCIÓN PRINCIPAL Y SAFE AREA ─── */}
+      <footer className="p-4 sm:p-5 bg-white border-t border-stone-200 shadow-lg shrink-0 pb-safe">
+        <div className="max-w-3xl mx-auto w-full">
+          <button
+            type="button"
+            onClick={handleOpenPinModal}
+            className="w-full h-14 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-black text-lg rounded-2xl shadow-md shadow-emerald-600/30 flex items-center justify-center gap-2.5 transition-transform active:scale-[0.98]"
+          >
+            <ShieldCheck className="w-6 h-6" />
+            <span>Comenzar Ventas</span>
+          </button>
+        </div>
       </footer>
 
       {/* ─── MODAL DE AUTENTICACIÓN CON PIN DE SUPERVISORA ─── */}

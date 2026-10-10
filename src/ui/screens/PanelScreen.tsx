@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import type { Movimiento, CatalogoItem, SemaforoCierre } from '../../domain/types';
 import { CountUp } from '../components/react-bits/CountUp';
 import { SpotlightCard } from '../components/react-bits/SpotlightCard';
-import { AuroraBackground } from '../components/react-bits/AuroraBackground';
+import { ItemIcon } from '../utils/itemIcons';
 import {
   TrendingUp,
   Package,
@@ -15,6 +15,8 @@ import {
   PieChart as PieIcon,
   ShoppingBag,
   Settings,
+  ArrowUpRight,
+  ArrowDownLeft,
 } from 'lucide-react';
 
 export type PeriodoFiltro = 'hoy' | 'semana' | 'mes';
@@ -62,7 +64,6 @@ export const PanelScreen: React.FC<PanelScreenProps> = ({
     let totalPiezasReconstruidas = 0;
 
     const ventasPorHora: Record<number, number> = {};
-    // Inicializar horas comunes de paletería (11:00 a 21:00)
     for (let h = 11; h <= 21; h++) {
       ventasPorHora[h] = 0;
     }
@@ -72,7 +73,6 @@ export const PanelScreen: React.FC<PanelScreenProps> = ({
       ventasPorCategoria[cat.id] = { piezas: 0, monto: 0 };
     });
 
-    // Procesar movimientos
     movimientos.forEach((mov) => {
       const hora = new Date(mov.ts_cliente).getHours();
 
@@ -102,7 +102,7 @@ export const PanelScreen: React.FC<PanelScreenProps> = ({
         }
       } else if (mov.tipo === 'MERMA') {
         totalMermas += mov.cantidad;
-        if (mov.motivo === 'CONSUMO_CASA') {
+        if (mov.motivo === 'consumo_casa') {
           mermasConsumoCasa += mov.cantidad;
         } else {
           mermasDano += mov.cantidad;
@@ -132,21 +132,17 @@ export const PanelScreen: React.FC<PanelScreenProps> = ({
     };
   }, [movimientos, catalog]);
 
-  // Max venta por hora para escalar la gráfica
   const maxVentaHora = useMemo(() => {
     const vals = Object.values(metrics.ventasPorHora);
-    const max = Math.max(...vals, 100);
-    return max;
+    return Math.max(...vals, 100);
   }, [metrics.ventasPorHora]);
 
-  // Feed reciente (últimos 8 movimientos ordenados descendente)
   const movimientosRecientes = useMemo(() => {
     return [...movimientos]
       .sort((a, b) => new Date(b.ts_cliente).getTime() - new Date(a.ts_cliente).getTime())
-      .slice(0, 8);
+      .slice(0, 10);
   }, [movimientos]);
 
-  // Mock de historial de cierres si no hay suficientes
   const historialDisplay = useMemo(() => {
     if (cierresHistoricos.length > 0) return cierresHistoricos;
     return [
@@ -175,38 +171,54 @@ export const PanelScreen: React.FC<PanelScreenProps> = ({
   }, [cierresHistoricos]);
 
   return (
-    <AuroraBackground className="min-h-screen w-full pb-16">
-      {/* Barra de Navegación Superior */}
-      <header className="sticky top-0 z-30 w-full border-b border-stone-200/70 bg-white/90 backdrop-blur-md px-4 py-3 shadow-xs">
-        <div className="mx-auto flex max-w-4xl items-center justify-between">
-          <button
-            onClick={onBackToMostrador}
-            className="flex items-center gap-2 rounded-xl bg-stone-100 hover:bg-stone-200 px-3.5 py-2 text-sm font-semibold text-stone-700 transition-colors active:scale-95"
-            aria-label="Volver al mostrador"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Mostrador</span>
-          </button>
+    <div className="h-full w-full overflow-y-auto bg-gradient-to-b from-[#FFFDF9] via-[#FEF8F0] to-[#FDF4E8] text-stone-900 pb-16 pb-safe select-none touch-manipulation">
+      {/* ─── BARRA DE NAVEGACIÓN RESPONSIVA (Móvil & Computadora) CON SAFE AREA ─── */}
+      <header className="sticky top-0 z-30 w-full border-b border-amber-200/60 bg-white/95 backdrop-blur-md px-3 sm:px-6 py-2.5 shadow-xs pt-safe">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 max-w-6xl mx-auto">
+          {/* Fila 1 en móvil / Izquierda en escritorio */}
+          <div className="flex items-center justify-between w-full sm:w-auto gap-3">
+            <button
+              type="button"
+              onClick={onBackToMostrador}
+              className="flex items-center gap-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 px-3 py-1.5 text-xs font-bold text-stone-700 transition-colors active:scale-95 cursor-pointer"
+              aria-label="Volver al mostrador"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Mostrador</span>
+            </button>
 
-          <div className="flex flex-col items-center">
-            <h1 className="text-base font-extrabold text-stone-900 tracking-tight flex items-center gap-1.5">
-              <span>📊 Panel Ejecutivo</span>
-            </h1>
-            <span className="text-[11px] font-medium text-stone-500">
-              Métricas & Tendencias en Tiempo Real
-            </span>
+            <div className="flex flex-col items-center sm:items-start">
+              <h1 className="text-base sm:text-lg font-black text-stone-900 tracking-tight flex items-center gap-1.5">
+                <span>📊 Panel Ejecutivo</span>
+              </h1>
+              <span className="text-[10px] sm:text-xs font-semibold text-stone-500">
+                Métricas & Tendencias en Tiempo Real
+              </span>
+            </div>
+
+            {onNavigateToConfig && (
+              <button
+                type="button"
+                onClick={onNavigateToConfig}
+                className="sm:hidden rounded-xl bg-stone-100 hover:bg-stone-200 p-2 text-stone-700 transition-colors active:scale-95 cursor-pointer"
+                title="Configuración de Sistema (Admin)"
+              >
+                <Settings className="h-4 w-4" />
+              </button>
+            )}
           </div>
 
-          {/* Controles de la derecha: Selector de Período y Botón Configuración */}
-          <div className="flex items-center gap-2">
-            <div className="flex rounded-xl bg-stone-100 p-1">
+          {/* Fila 2 en móvil / Derecha en escritorio: Filtro de Periodo */}
+          <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+            <div className="flex rounded-xl bg-stone-100 p-1 w-full sm:w-auto justify-center">
               {(['hoy', 'semana', 'mes'] as PeriodoFiltro[]).map((p) => (
                 <button
                   key={p}
+                  type="button"
                   onClick={() => setPeriodo(p)}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all ${
+                  className={`flex-1 sm:flex-none rounded-lg px-3 py-1 text-xs font-black transition-all cursor-pointer ${
                     periodo === p
-                      ? 'bg-amber-500 text-white shadow-xs'
+                      ? 'bg-amber-500 text-stone-950 shadow-xs'
                       : 'text-stone-600 hover:text-stone-900'
                   }`}
                 >
@@ -219,9 +231,8 @@ export const PanelScreen: React.FC<PanelScreenProps> = ({
               <button
                 type="button"
                 onClick={onNavigateToConfig}
-                className="rounded-xl bg-stone-100 hover:bg-stone-200 p-2 text-stone-700 transition-colors active:scale-95"
+                className="hidden sm:flex rounded-xl bg-stone-100 hover:bg-stone-200 p-2 text-stone-700 transition-colors active:scale-95 cursor-pointer"
                 title="Configuración de Sistema (Admin)"
-                aria-label="Configuración de Sistema"
               >
                 <Settings className="h-4 w-4" />
               </button>
@@ -230,132 +241,141 @@ export const PanelScreen: React.FC<PanelScreenProps> = ({
         </div>
       </header>
 
-      {/* Contenido Principal */}
-      <main className="mx-auto max-w-4xl px-4 pt-6 space-y-6">
-        {/* Banner de Estado de Hipótesis Piloto */}
-        <div className="rounded-2xl border border-amber-200 bg-amber-50/70 p-3.5 flex items-center justify-between gap-3 text-xs text-amber-900">
+      {/* ─── CONTENIDO PRINCIPAL FLUIDO Y EXPANSIVO ─── */}
+      <main className="max-w-6xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6 space-y-4 sm:space-y-6">
+        {/* Banner de Estado de Hipótesis */}
+        <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-amber-950 shadow-xs">
           <div className="flex items-center gap-2">
-            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-semibold">Objetivo Piloto:</span>
+            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <span className="font-bold">Objetivo Piloto:</span>
             <span>% Dinero Reconstruido &lt; 15% | Cierre en &lt; 5 min</span>
           </div>
-          <span className="font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
-            {metrics.porcentajeReconstruido < 15 ? 'En Rango Óptimo' : 'Revisar Cierres'}
+          <span className="self-start sm:self-auto font-black text-emerald-800 bg-emerald-100/90 border border-emerald-300 px-2.5 py-0.5 rounded-full text-[11px]">
+            {metrics.porcentajeReconstruido < 15 ? '✓ En Rango Óptimo' : '⚠️ Revisar Cierres'}
           </span>
         </div>
 
-        {/* 4 KPI Cards (Spotlight Cards con React Bits) */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {/* ─── 4 TARJETAS KPI (RESPONSIVAS: 2 COLUMNAS EN MÓVIL / 4 EN ESCRITORIO) ─── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
           {/* KPI 1: Total Vendido */}
-          <SpotlightCard className="p-4" spotlightColor="rgba(245, 158, 11, 0.2)">
+          <SpotlightCard className="p-3.5 sm:p-4 rounded-2xl bg-white border border-stone-200/80 shadow-xs" spotlightColor="rgba(245, 158, 11, 0.15)">
             <div className="flex items-center justify-between text-stone-500 mb-1">
-              <span className="text-xs font-bold uppercase tracking-wider">Total Ventas</span>
-              <DollarSign className="h-4 w-4 text-amber-500" />
+              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-stone-500">Total Ventas</span>
+              <DollarSign className="h-4 w-4 text-amber-600 shrink-0" />
             </div>
-            <div className="text-2xl font-black text-stone-900">
+            <div className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
               <CountUp to={metrics.totalVendido} prefix="$" suffix=" MXN" />
             </div>
-            <p className="mt-1 text-[11px] font-medium text-emerald-600 flex items-center gap-1">
+            <p className="mt-1 text-[10px] sm:text-[11px] font-bold text-emerald-600 flex items-center gap-1">
               <TrendingUp className="h-3 w-3 inline" />
               <span>Jornada en curso</span>
             </p>
           </SpotlightCard>
 
           {/* KPI 2: Piezas Vendidas */}
-          <SpotlightCard className="p-4" spotlightColor="rgba(56, 189, 248, 0.2)">
+          <SpotlightCard className="p-3.5 sm:p-4 rounded-2xl bg-white border border-stone-200/80 shadow-xs" spotlightColor="rgba(56, 189, 248, 0.15)">
             <div className="flex items-center justify-between text-stone-500 mb-1">
-              <span className="text-xs font-bold uppercase tracking-wider">Piezas</span>
-              <ShoppingBag className="h-4 w-4 text-sky-500" />
+              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-stone-500">Piezas</span>
+              <ShoppingBag className="h-4 w-4 text-sky-600 shrink-0" />
             </div>
-            <div className="text-2xl font-black text-stone-900">
+            <div className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
               <CountUp to={metrics.totalPiezasVendidas} suffix=" pzs" />
             </div>
-            <p className="mt-1 text-[11px] text-stone-500">Paletas y nieves</p>
+            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-stone-500 truncate">
+              Paletas, nieves y combos
+            </p>
           </SpotlightCard>
 
           {/* KPI 3: Mermas Registradas */}
-          <SpotlightCard className="p-4" spotlightColor="rgba(244, 63, 94, 0.2)">
+          <SpotlightCard className="p-3.5 sm:p-4 rounded-2xl bg-white border border-stone-200/80 shadow-xs" spotlightColor="rgba(244, 63, 94, 0.15)">
             <div className="flex items-center justify-between text-stone-500 mb-1">
-              <span className="text-xs font-bold uppercase tracking-wider">Mermas</span>
-              <AlertTriangle className="h-4 w-4 text-rose-500" />
+              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-stone-500">Mermas</span>
+              <AlertTriangle className="h-4 w-4 text-rose-500 shrink-0" />
             </div>
-            <div className="text-2xl font-black text-stone-900">
+            <div className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
               <CountUp to={metrics.totalMermas} suffix=" pzs" />
             </div>
-            <p className="mt-1 text-[11px] text-stone-500">
+            <p className="mt-1 text-[10px] sm:text-[11px] font-medium text-stone-500 truncate">
               {metrics.mermasConsumoCasa} casa | {metrics.mermasDano} daño
             </p>
           </SpotlightCard>
 
           {/* KPI 4: % Reconstruido */}
-          <SpotlightCard className="p-4" spotlightColor="rgba(168, 85, 247, 0.2)">
+          <SpotlightCard className="p-3.5 sm:p-4 rounded-2xl bg-white border border-stone-200/80 shadow-xs" spotlightColor="rgba(168, 85, 247, 0.15)">
             <div className="flex items-center justify-between text-stone-500 mb-1">
-              <span className="text-xs font-bold uppercase tracking-wider">% Reconstruido</span>
-              <RefreshCw className="h-4 w-4 text-purple-500" />
+              <span className="text-[10px] sm:text-xs font-black uppercase tracking-wider text-stone-500">% Reconstruido</span>
+              <RefreshCw className="h-4 w-4 text-purple-600 shrink-0" />
             </div>
-            <div className="text-2xl font-black text-stone-900">
+            <div className="text-xl sm:text-2xl font-black text-stone-900 tracking-tight">
               <CountUp to={metrics.porcentajeReconstruido} decimals={1} suffix="%" />
             </div>
             <p
-              className={`mt-1 text-[11px] font-semibold ${
+              className={`mt-1 text-[10px] sm:text-[11px] font-bold ${
                 metrics.porcentajeReconstruido <= 15 ? 'text-emerald-600' : 'text-amber-600'
               }`}
             >
-              Meta: &lt;15% del día
+              Tolerancia: &lt;15% del total
             </p>
           </SpotlightCard>
         </div>
 
-        {/* Sección: Gráfica de Ventas por Hora & Distribución por Categoría */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          {/* Gráfico de Barras: Ventas por Hora */}
-          <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-bold text-stone-800 flex items-center gap-2">
+        {/* ─── SECCIÓN: GRÁFICA DE VENTAS POR HORA & MIX DE CATEGORÍAS ─── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          {/* Gráfico de Barras por Hora */}
+          <div className="rounded-3xl border border-stone-200/80 bg-white p-4 sm:p-5 shadow-xs flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-extrabold text-stone-900 flex items-center gap-2">
                 <Clock className="h-4 w-4 text-amber-500" />
                 <span>Actividad por Hora (Ventas $)</span>
               </h2>
-              <span className="text-xs text-stone-400">Hoy</span>
+              <span className="text-[11px] font-bold text-stone-400 bg-stone-100 px-2 py-0.5 rounded-md">
+                11:00h - 21:00h
+              </span>
             </div>
 
-            <div className="h-44 w-full flex items-end gap-1.5 pt-4">
-              {Object.entries(metrics.ventasPorHora).map(([horaStr, total]) => {
-                const hora = parseInt(horaStr, 10);
-                const heightPct = maxVentaHora > 0 ? (total / maxVentaHora) * 100 : 0;
-                return (
-                  <div key={hora} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                    <div className="w-full flex justify-center">
-                      <span className="text-[9px] font-bold text-stone-500">
-                        {total > 0 ? `$${total}` : ''}
+            {/* Contenedor desplazable en móvil para que nunca se encimen las columnas */}
+            <div className="overflow-x-auto pb-2 -mx-1 px-1">
+              <div className="h-44 min-w-[420px] flex items-end gap-2 pt-4">
+                {Object.entries(metrics.ventasPorHora).map(([horaStr, total]) => {
+                  const hora = parseInt(horaStr, 10);
+                  const heightPct = maxVentaHora > 0 ? (total / maxVentaHora) * 100 : 0;
+                  return (
+                    <div key={hora} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
+                      <div className="w-full flex justify-center">
+                        <span className="text-[9px] font-black text-stone-600 truncate">
+                          {total > 0 ? `$${total}` : ''}
+                        </span>
+                      </div>
+                      <div className="w-full bg-stone-100 rounded-t-lg relative flex items-end h-28 overflow-hidden">
+                        <div
+                          className="w-full bg-gradient-to-t from-amber-500 to-amber-300 rounded-t-lg transition-all duration-500 hover:brightness-110"
+                          style={{ height: `${Math.max(heightPct, 6)}%` }}
+                          title={`${hora}:00 — $${total} MXN`}
+                        />
+                      </div>
+                      <span className="text-[10px] font-bold text-stone-500">
+                        {hora}h
                       </span>
                     </div>
-                    <div className="w-full bg-stone-100 rounded-t-md relative flex items-end h-28 overflow-hidden">
-                      <div
-                        className="w-full bg-gradient-to-t from-amber-500 to-amber-300 rounded-t-md transition-all duration-500 hover:brightness-110"
-                        style={{ height: `${Math.max(heightPct, 4)}%` }}
-                        title={`${hora}:00 — $${total} MXN`}
-                      />
-                    </div>
-                    <span className="text-[10px] font-semibold text-stone-400">
-                      {hora}h
-                    </span>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          {/* Distribución por Categoría */}
-          <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-xs">
+          {/* Mix de Ventas por Categoría */}
+          <div className="rounded-3xl border border-stone-200/80 bg-white p-4 sm:p-5 shadow-xs">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-bold text-stone-800 flex items-center gap-2">
+              <h2 className="text-sm font-extrabold text-stone-900 flex items-center gap-2">
                 <PieIcon className="h-4 w-4 text-sky-500" />
                 <span>Mix de Ventas por Categoría</span>
               </h2>
-              <span className="text-xs text-stone-400">Piezas & Monto</span>
+              <span className="text-[11px] font-bold text-stone-400 bg-stone-100 px-2 py-0.5 rounded-md">
+                Piezas & Monto
+              </span>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               {catalog.map((item) => {
                 const catData = metrics.ventasPorCategoria[item.id] || { piezas: 0, monto: 0 };
                 const pct =
@@ -364,14 +384,20 @@ export const PanelScreen: React.FC<PanelScreenProps> = ({
                     : 0;
 
                 return (
-                  <div key={item.id} className="space-y-1">
-                    <div className="flex items-center justify-between text-xs font-semibold">
-                      <span className="flex items-center gap-1.5 text-stone-800">
-                        <span className="text-base">{item.icono}</span>
-                        <span>{item.nombre}</span>
+                  <div key={item.id} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-bold">
+                      <span className="flex items-center gap-2 text-stone-800">
+                        <div
+                          className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 border border-white shadow-2xs"
+                          style={{ background: `${item.color}25` }}
+                        >
+                          <ItemIcon icono={item.icono} color={item.color} className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="truncate max-w-[150px] sm:max-w-none">{item.nombre}</span>
                       </span>
-                      <span className="text-stone-500">
-                        <strong className="text-stone-800">{catData.piezas} pzs</strong> (${catData.monto} MXN · {pct}%)
+                      <span className="text-stone-500 text-right">
+                        <strong className="text-stone-900">{catData.piezas} pzs</strong>
+                        <span className="text-stone-400 text-[11px] ml-1">(${catData.monto} · {pct}%)</span>
                       </span>
                     </div>
                     <div className="h-2 w-full bg-stone-100 rounded-full overflow-hidden">
@@ -390,16 +416,18 @@ export const PanelScreen: React.FC<PanelScreenProps> = ({
           </div>
         </div>
 
-        {/* Sección: Historial de Diferencias de Caja & Feed Reciente */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        {/* ─── SECCIÓN: HISTORIAL DE CIERRES & FEED DE MOVIMIENTOS RECIENTES ─── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           {/* Historial de Cierres Diarios (Semáforo R11) */}
-          <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-xs">
+          <div className="rounded-3xl border border-stone-200/80 bg-white p-4 sm:p-5 shadow-xs">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-bold text-stone-800 flex items-center gap-2">
+              <h2 className="text-sm font-extrabold text-stone-900 flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-emerald-500" />
                 <span>Historial de Diferencias de Caja</span>
               </h2>
-              <span className="text-xs text-stone-400">Últimos Cierres</span>
+              <span className="text-[11px] font-bold text-stone-400 bg-stone-100 px-2 py-0.5 rounded-md">
+                Últimos turnos
+              </span>
             </div>
 
             <div className="space-y-2.5">
@@ -410,28 +438,28 @@ export const PanelScreen: React.FC<PanelScreenProps> = ({
                 return (
                   <div
                     key={idx}
-                    className="flex items-center justify-between rounded-xl border border-stone-100 bg-stone-50/70 p-3 text-xs"
+                    className="flex items-center justify-between rounded-2xl border border-stone-100 bg-stone-50/80 p-3 text-xs"
                   >
                     <div>
-                      <div className="font-bold text-stone-800">{h.fecha}</div>
-                      <div className="text-[10px] text-stone-400">{h.jornada_id}</div>
+                      <div className="font-extrabold text-stone-900 text-sm">{h.fecha}</div>
+                      <div className="text-[10px] text-stone-400 font-mono mt-0.5">{h.jornada_id}</div>
                     </div>
 
                     <div className="text-right">
-                      <div className="font-extrabold text-stone-900">
+                      <div className="font-black text-stone-900 text-sm">
                         ${h.total_vendido.toLocaleString('es-MX')} MXN
                       </div>
-                      <div
-                        className={`text-[11px] font-bold ${
+                      <span
+                        className={`inline-block mt-1 px-2 py-0.5 rounded-md text-[10px] font-black border ${
                           esVerde
-                            ? 'text-emerald-600'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                             : esAmbar
-                            ? 'text-amber-600'
-                            : 'text-rose-600'
+                            ? 'bg-amber-50 text-amber-800 border-amber-300'
+                            : 'bg-rose-50 text-rose-800 border-rose-300'
                         }`}
                       >
-                        Dif: {h.diferencia >= 0 ? `+$${h.diferencia}` : `-$${Math.abs(h.diferencia)}`} MXN ({h.semaforo})
-                      </div>
+                        {h.diferencia >= 0 ? `+$${h.diferencia}` : `-$${Math.abs(h.diferencia)}`} MXN ({h.semaforo})
+                      </span>
                     </div>
                   </div>
                 );
@@ -440,21 +468,23 @@ export const PanelScreen: React.FC<PanelScreenProps> = ({
           </div>
 
           {/* Feed de Movimientos Recientes */}
-          <div className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-xs">
+          <div className="rounded-3xl border border-stone-200/80 bg-white p-4 sm:p-5 shadow-xs">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-bold text-stone-800 flex items-center gap-2">
+              <h2 className="text-sm font-extrabold text-stone-900 flex items-center gap-2">
                 <Package className="h-4 w-4 text-purple-500" />
                 <span>Movimientos Recientes</span>
               </h2>
-              <span className="text-xs text-stone-400">{movimientos.length} total</span>
+              <span className="text-[11px] font-bold text-stone-400 bg-stone-100 px-2 py-0.5 rounded-md">
+                {movimientos.length} registrados
+              </span>
             </div>
 
             {movimientosRecientes.length === 0 ? (
-              <div className="py-8 text-center text-xs text-stone-400">
-                Aún no hay movimientos en esta jornada.
+              <div className="py-10 text-center text-xs font-semibold text-stone-400">
+                Aún no hay movimientos registrados en esta jornada.
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 max-h-[340px] overflow-y-auto pr-1">
                 {movimientosRecientes.map((mov) => {
                   const cat = catalogMap.get(mov.categoria_id);
                   const isVenta = mov.tipo === 'VENTA';
@@ -465,18 +495,25 @@ export const PanelScreen: React.FC<PanelScreenProps> = ({
                   return (
                     <div
                       key={mov.id_mov}
-                      className="flex items-center justify-between rounded-xl border border-stone-100 bg-white p-2.5 text-xs shadow-2xs"
+                      className="flex items-center justify-between rounded-2xl border border-stone-100 bg-stone-50/70 p-2.5 text-xs hover:bg-stone-50 transition-colors"
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="text-base">{cat?.icono || '📦'}</span>
+                      <div className="flex items-center gap-2.5">
+                        <div
+                          className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border border-white shadow-2xs"
+                          style={{ background: `${cat?.color || '#F59E0B'}25` }}
+                        >
+                          <ItemIcon
+                            icono={cat?.icono || 'package'}
+                            color={cat?.color || '#F59E0B'}
+                            className="w-4 h-4"
+                          />
+                        </div>
                         <div>
-                          <div className="font-bold text-stone-800">
-                            {cat?.nombre || mov.categoria_id}{' '}
-                            <span className="font-normal text-stone-500">
-                              × {mov.cantidad}
-                            </span>
+                          <div className="font-extrabold text-stone-900 leading-tight">
+                            {cat?.nombre.replace('Paleta de ', '') || mov.categoria_id}{' '}
+                            <span className="font-black text-amber-700">×{mov.cantidad}</span>
                           </div>
-                          <div className="text-[10px] text-stone-400">
+                          <div className="text-[10px] text-stone-400 mt-0.5">
                             {new Date(mov.ts_cliente).toLocaleTimeString('es-MX', {
                               hour: '2-digit',
                               minute: '2-digit',
@@ -487,19 +524,22 @@ export const PanelScreen: React.FC<PanelScreenProps> = ({
 
                       <div className="text-right">
                         <span
-                          className={`inline-block rounded-md px-2 py-0.5 text-[10px] font-extrabold ${
+                          className={`inline-flex items-center gap-0.5 rounded-lg px-2 py-0.5 text-[10px] font-black border ${
                             isVenta
-                              ? 'bg-emerald-100 text-emerald-800'
+                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
                               : isAnul
-                              ? 'bg-rose-100 text-rose-800'
+                              ? 'bg-rose-50 text-rose-800 border-rose-200'
                               : isMerma
-                              ? 'bg-amber-100 text-amber-800'
+                              ? 'bg-amber-50 text-amber-900 border-amber-200'
                               : isEntrada
-                              ? 'bg-sky-100 text-sky-800'
-                              : 'bg-stone-100 text-stone-800'
+                              ? 'bg-sky-50 text-sky-800 border-sky-200'
+                              : 'bg-stone-100 text-stone-700 border-stone-200'
                           }`}
                         >
-                          {mov.tipo} {mov.monto_total > 0 ? `+$${mov.monto_total}` : ''}
+                          {isVenta && <ArrowUpRight className="w-3 h-3 text-emerald-600" />}
+                          {isEntrada && <ArrowDownLeft className="w-3 h-3 text-sky-600" />}
+                          <span>{mov.tipo}</span>
+                          {mov.monto_total > 0 && <span className="ml-0.5 font-extrabold">${mov.monto_total}</span>}
                         </span>
                       </div>
                     </div>
@@ -510,7 +550,7 @@ export const PanelScreen: React.FC<PanelScreenProps> = ({
           </div>
         </div>
       </main>
-    </AuroraBackground>
+    </div>
   );
 };
 

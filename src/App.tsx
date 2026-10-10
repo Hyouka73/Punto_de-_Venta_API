@@ -17,6 +17,7 @@ import {
   computeTotalHoy,
   soldByProduct,
   stockRemaining,
+  getAvailableStock,
   type SessionState,
 } from './state/sessionStore';
 import { createDataAdapter } from './adapters';
@@ -28,7 +29,7 @@ const SyncStatusScreen = lazy(() => import('./ui/screens/SyncStatusScreen'));
 const ConfiguracionScreen = lazy(() => import('./ui/screens/ConfiguracionScreen'));
 const LaboratorioScreen = lazy(() => import('./ui/screens/LaboratorioScreen'));
 
-type ActiveView =
+export type ActiveView =
   | 'mostrador'
   | 'apertura'
   | 'cierre'
@@ -38,6 +39,43 @@ type ActiveView =
   | 'sync'
   | 'config'
   | 'laboratorio';
+
+const VALID_VIEWS: readonly ActiveView[] = [
+  'mostrador',
+  'apertura',
+  'cierre',
+  'merma',
+  'entrada',
+  'panel',
+  'sync',
+  'config',
+  'laboratorio',
+];
+
+function getViewFromLocation(): ActiveView {
+  if (typeof window === 'undefined') return 'mostrador';
+
+  // 1. Prioridad: Hash en la URL (ej: #/, #mostrador, #/panel, #/config)
+  const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase().trim();
+  if (!hash || hash === 'mostrador') {
+    return 'mostrador';
+  }
+  if (VALID_VIEWS.includes(hash as ActiveView)) {
+    return hash as ActiveView;
+  }
+
+  // 2. Respaldo: Sesión de navegación activa para sobrevivir a recargas sin hash
+  try {
+    const saved = window.sessionStorage.getItem('pos_active_view');
+    if (saved && VALID_VIEWS.includes(saved as ActiveView)) {
+      return saved as ActiveView;
+    }
+  } catch {
+    /* ignorado */
+  }
+
+  return 'mostrador';
+}
 
 const DISPOSITIVO_ID = 'disp-local';
 
@@ -51,7 +89,55 @@ const AppInner: React.FC = () => {
   const config = useConfig();
   const { catalog, params, adapterMode, webappUrl } = config;
 
-  const [currentView, setCurrentView] = useState<ActiveView>('mostrador');
+  // Enrutamiento reactivo: inicializa con la vista desde la URL o sessionStorage
+  const [currentView, setCurrentView] = useState<ActiveView>(() => getViewFromLocation());
+
+  // Navegación que sincroniza URL, historial de navegador y sesión
+  const navigateTo = useCallback((view: ActiveView) => {
+    setCurrentView(view);
+    if (typeof window !== 'undefined') {
+      try {
+        window.sessionStorage.setItem('pos_active_view', view);
+        const targetHash = view === 'mostrador' ? '#/' : `#/${view}`;
+        if (window.location.hash !== targetHash) {
+          window.location.hash = targetHash;
+        }
+      } catch {
+        /* ignorado */
+      }
+    }
+  }, []);
+
+  const go = useCallback((v: ActiveView) => () => navigateTo(v), [navigateTo]);
+
+  // Escuchar cambios de URL (hashchange y botón Atrás/Adelante del celular o navegador)
+  useEffect(() => {
+    const handleHashOrPop = () => {
+      const v = getViewFromLocation();
+      setCurrentView(v);
+      try {
+        window.sessionStorage.setItem('pos_active_view', v);
+      } catch {
+        /* ignorado */
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashOrPop);
+    window.addEventListener('popstate', handleHashOrPop);
+
+    // Asegurar que el hash refleje la vista actual al montar
+    const currentHash = window.location.hash.replace(/^#\/?/, '').toLowerCase().trim();
+    const expectedHash = currentView === 'mostrador' ? '' : currentView;
+    if (currentHash !== expectedHash && currentView !== 'mostrador') {
+      window.location.hash = `#/${currentView}`;
+    }
+
+    return () => {
+      window.removeEventListener('hashchange', handleHashOrPop);
+      window.removeEventListener('popstate', handleHashOrPop);
+    };
+  }, [currentView]);
+
   const [session, setSession] = useState<SessionState>(() =>
     loadSession(typeof window !== 'undefined' ? window.localStorage : null, params.fondo_caja_default)
   );
@@ -106,6 +192,18 @@ const AppInner: React.FC = () => {
   });
 
   const handleRegisterSale = (item: CatalogoItem, cantidad: number) => {
+    if (!session.jornadaActiva) {
+      console.warn('Venta rechazada: la jornada está cerrada.');
+      return undefined;
+    }
+    const currentStock = stockRemaining(catalog, session.inventarioInicial, session.movimientos);
+    const available = getAvailableStock(item, currentStock);
+    if (available !== null && (available <= 0 || cantidad > available)) {
+      console.warn(
+        `Venta bloqueada: stock insuficiente para ${item.nombre}. Disponible: ${available}, solicitado: ${cantidad}`
+      );
+      return undefined;
+    }
     const id = uuidv4();
     record([
       {
@@ -154,7 +252,7 @@ const AppInner: React.FC = () => {
       entradas: {},
       mermas: {},
     });
-    setCurrentView('mostrador');
+    navigateTo('mostrador');
   };
 
   const handleSaveMerma = (data: {
@@ -181,7 +279,7 @@ const AppInner: React.FC = () => {
         nota: data.nota,
       },
     ]);
-    setCurrentView('mostrador');
+    navigateTo('mostrador');
   };
 
   const handleSaveEntrada = (data: { entradas: Record<string, number>; nota?: string }) => {
@@ -209,18 +307,37 @@ const AppInner: React.FC = () => {
       return { ...prev, entradas };
     });
     record(movs);
-    setCurrentView('mostrador');
+    navigateTo('mostrador');
   };
 
-  const handleConfirmCierre = () => {
+  const handleConfirmCierre = (data: {
+    reconstruccionesAceptadas?: Readonly<Record<string, number>>;
+    notaCierre?: string;
+  }) => {
+    // Ventas sin toque aceptadas: se agregan como RECONSTRUCCION (libro append-only, R12).
+    const movs: Movimiento[] = [];
+    for (const [catId, cant] of Object.entries(data.reconstruccionesAceptadas ?? {})) {
+      const item = catalog.find((c) => c.id === catId);
+      if (!item || cant <= 0) continue;
+      movs.push({
+        ...baseMov(),
+        id_mov: uuidv4(),
+        tipo: 'RECONSTRUCCION',
+        categoria_id: catId,
+        cantidad: cant,
+        precio_unitario: item.precio,
+        monto_total: item.precio * cant,
+        usuario: 'supervisora',
+        nota: data.notaCierre,
+      });
+    }
+    if (movs.length > 0) record(movs);
     setSession((prev) => ({ ...prev, jornadaActiva: false }));
   };
 
-  const go = (v: ActiveView) => () => setCurrentView(v);
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-100/40 via-orange-50/30 to-stone-200/50 flex items-center justify-center sm:p-4">
-      <div className="w-full h-screen sm:h-[92vh] sm:max-h-[880px] max-w-md sm:rounded-[36px] sm:shadow-[0_25px_60px_-15px_rgba(217,119,6,0.18)] sm:border sm:border-white/80 sm:ring-1 sm:ring-amber-200/40 overflow-hidden bg-white flex flex-col">
+    <div className="w-full h-dvh min-h-dvh bg-stone-100 flex flex-col overflow-hidden select-none">
+      <div className="w-full h-full flex-1 flex flex-col overflow-hidden bg-white">
       {currentView === 'mostrador' && (
         <MostradorScreen
           catalog={activeCatalog}
@@ -301,6 +418,7 @@ const AppInner: React.FC = () => {
       {currentView === 'cierre' && (
         <CierreScreen
           jornadaId={session.jornadaId}
+          jornadaActiva={session.jornadaActiva}
           fondoInicial={session.fondoInicial}
           inventarioInicial={session.inventarioInicial}
           entradas={session.entradas}
@@ -320,11 +438,11 @@ const AppInner: React.FC = () => {
         <EntradaScreen catalog={activeCatalog} onSaveEntrada={handleSaveEntrada} onCancel={go('mostrador')} />
       )}
 
+      </div>
       {/* Inspector de verificación visual: sólo DEV (UR9) */}
       {import.meta.env.DEV && (
-        <VisualVerifierBar currentView={currentView} onSelectScreen={(screen) => setCurrentView(screen)} />
+        <VisualVerifierBar currentView={currentView} onSelectScreen={(screen) => navigateTo(screen)} />
       )}
-      </div>
     </div>
   );
 };

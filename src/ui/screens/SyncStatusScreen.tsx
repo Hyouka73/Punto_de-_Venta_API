@@ -64,9 +64,9 @@ export const SyncStatusScreen: React.FC<SyncStatusScreenProps> = ({
   };
 
   return (
-    <div className="min-h-screen w-full bg-stone-50 select-none flex flex-col justify-between max-w-lg mx-auto">
-      {/* Encabezado */}
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-stone-200 bg-white px-4 py-3 shadow-xs">
+    <div className="h-full w-full bg-stone-50 select-none flex flex-col overflow-hidden">
+      {/* Encabezado con safe area */}
+      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-stone-200 bg-white px-4 sm:px-6 py-3 shadow-xs pt-safe">
         <button
           onClick={onBack}
           className="flex items-center gap-2 rounded-xl bg-stone-100 hover:bg-stone-200 px-3.5 py-2 text-sm font-semibold text-stone-700 transition-colors active:scale-95"
@@ -83,7 +83,7 @@ export const SyncStatusScreen: React.FC<SyncStatusScreenProps> = ({
       </header>
 
       {/* Contenido Principal */}
-      <main className="flex-1 px-4 py-6 space-y-6">
+      <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-6 max-w-2xl mx-auto w-full pb-safe">
         {/* Card Gigante de Estado */}
         <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-sm flex flex-col items-center text-center">
           <div className="my-3">
