@@ -3,13 +3,13 @@
 ## 📌 Metadatos de Control de Ejecución
 - **Proyecto:** POS Paletería (Netlify + Google Sheets)
 - **Fecha de Inicio:** 8 de octubre de 2026
-- **Última Actualización:** 2026-10-10T11:45:00-06:00
-- **Fase / Sprint Activo:** **Producción Activa en Netlify (PWA + Google Sheets)**
-- **Progreso General:** 26 / 26 tareas completadas (100%) + Overhaul Responsivo + Cierre en 3 Pasos + Despliegue Netlify Prod
-- **Tarea en Curso:** Ninguna (Producción en vivo en https://pos-paleteria-v2.netlify.app)
-- **Última Tarea Cerrada:** `[x] Despliegue a Netlify en Producción: consumo automático de .env en lugar de configuración manual, variables importadas en Netlify CLI, commit e push en GitHub, y deploy live verificado.`
-- **Anterior:** `[x] Cierre simplificado en 3 pasos (planClosing, restante precargado por toques, libreta, transferencias, RECONSTRUCCION al cerrar, 115/115 tests).`
-- **Siguiente Tarea Inmediata:** Monitoreo y retroalimentación operativa en producción con Google Sheets.
+- **Última Actualización:** 2026-10-10T12:12:00-06:00
+- **Fase / Sprint Activo:** **Producción Activa en Netlify (PWA + Google Sheets en Vivo)**
+- **Progreso General:** 26 / 26 tareas completadas (100%) + Erradicación Total de Mocks + Sincronización en Vivo Sheets + Deploy v2.0.1
+- **Tarea en Curso:** Ninguna (Producción 100% en vivo en https://pos-paleteria-v2.netlify.app)
+- **Última Tarea Cerrada:** `[x] Erradicación Total de Mocks: eliminación de stocks quemados (45/38/14/10) en Apertura y Cierre, eliminación de badges 'Mock' en Mostrador y Sync, sobreescritura de residuos 'mock' en localStorage a favor de Google Sheets, sincronización del catálogo en vivo desde Sheets en arranque y despliegue Netlify live (115/115 tests).`
+- **Anterior:** `[x] Despliegue a Netlify en Producción: consumo automático de .env en lugar de configuración manual, variables importadas en Netlify CLI, commit e push en GitHub, y deploy live verificado.`
+- **Siguiente Tarea Inmediata:** Monitoreo y operación regular en producción con Google Sheets.
 
 ---
 
