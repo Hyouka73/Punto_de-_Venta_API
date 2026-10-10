@@ -57,7 +57,7 @@ const BLANK_PRODUCT = {
 export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
   initialCatalog,
   initialParameters = DEFAULT_PARAMETERS,
-  adapterMode: initialAdapterMode = 'mock',
+  adapterMode: initialAdapterMode = ENV.dataAdapter,
   webappUrl: initialWebappUrl = '',
   adminPin = '654321', // PIN admin por defecto para desarrollo
   onSaveConfig,
@@ -683,7 +683,7 @@ export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
                     : 'bg-stone-200 text-stone-700'
                 }`}
               >
-                {adapterMode === 'sheets' ? 'Modo Sheets Activo' : 'Modo Mock Local'}
+                {adapterMode === 'sheets' ? 'Google Sheets Activo' : 'Modo Local Offline'}
               </span>
             </div>
 
@@ -705,10 +705,10 @@ export const ConfiguracionScreen: React.FC<ConfiguracionScreenProps> = ({
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <Database className="h-4 w-4 text-amber-600" />
-                    <span className="font-bold text-xs text-stone-900">Mock Local</span>
+                    <span className="font-bold text-xs text-stone-900">Local Offline</span>
                   </div>
                   <p className="text-[10px] text-stone-500">
-                    Almacenamiento en memoria e IndexedDB. Ideal para desarrollo y demostración offline.
+                    Almacenamiento en IndexedDB local. Ideal para pruebas sin conexión a Google Sheets.
                   </p>
                 </button>
 

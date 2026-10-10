@@ -77,9 +77,9 @@ const signed = (n: number) => `${n >= 0 ? '+' : '−'}$${Math.abs(n).toFixed(2)}
  */
 export const CierreScreen: React.FC<CierreScreenProps> = ({
   jornadaId,
-  fecha = new Date().toISOString().split('T')[0] ?? '2026-10-09',
-  fondoInicial = 200,
-  inventarioInicial = { CAT_AGUA: 45, CAT_CREMA: 38, CAT_SANDWICH: 14, CAT_NIEVE: 10 },
+  fecha = new Date().toISOString().slice(0, 10),
+  fondoInicial = 0,
+  inventarioInicial = {},
   entradas = {},
   mermas = {},
   movimientos = [],

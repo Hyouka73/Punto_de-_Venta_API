@@ -35,25 +35,9 @@ export interface AperturaScreenProps {
   readonly onCancel?: () => void;
 }
 
-const DEFAULT_SUGGESTED_STOCK: Record<string, number> = {
-  CAT_AGUA: 45,
-  CAT_CREMA: 38,
-  CAT_SANDWICH: 14,
-  CAT_NIEVE: 10,
-};
-
-/**
- * Pantalla 2: APERTURA DE JORNADA (Inicio de Día en <1 Minuto)
- *
- * Implementada según especificación Stitch y Reglas R1 y R14.
- * - Inventario inicial precargado del cierre anterior.
- * - Steppers ergonómicos para ajuste rápido por categoría.
- * - Fondo inicial en caja editable con atajos rápidos.
- * - Teclado táctil de PIN de 4 dígitos para Supervisora con límite de 3 intentos.
- */
 export const AperturaScreen: React.FC<AperturaScreenProps> = ({
-  fecha = new Date().toISOString().split('T')[0] ?? '2026-10-09',
-  initialStock = DEFAULT_SUGGESTED_STOCK,
+  fecha = new Date().toISOString().slice(0, 10),
+  initialStock = {},
   defaultFondoInicial = 200,
   catalog = DEFAULT_CATALOG,
   supervisorPinExpected = '1234',
@@ -438,9 +422,11 @@ export const AperturaScreen: React.FC<AperturaScreenProps> = ({
               </button>
             </div>
 
-            <p className="text-[11px] text-stone-400 mt-2 text-center">
-              Modo desarrollo: PIN predeterminado <span className="font-bold">1234</span>
-            </p>
+            {import.meta.env.DEV && (
+              <p className="text-[11px] text-stone-400 mt-2 text-center">
+                Modo desarrollo: PIN predeterminado <span className="font-bold">1234</span>
+              </p>
+            )}
           </div>
         </div>
       )}

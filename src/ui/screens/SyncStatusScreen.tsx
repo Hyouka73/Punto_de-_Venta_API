@@ -14,6 +14,8 @@ import {
   ChevronUp,
 } from 'lucide-react';
 
+import { ENV } from '@/config/env';
+
 export interface SyncStatusScreenProps {
   status?: Partial<SyncWorkerStatus>;
   onForceSync?: () => Promise<void> | void;
@@ -25,7 +27,9 @@ export const SyncStatusScreen: React.FC<SyncStatusScreenProps> = ({
   status = {},
   onForceSync,
   onBack,
-  backendName = 'MockDataAdapter (Local In-Memory / IndexedDB)',
+  backendName = ENV.dataAdapter === 'sheets'
+    ? 'Google Sheets (Apps Script)'
+    : 'Almacenamiento Local (IndexedDB)',
 }) => {
   const {
     isSyncing = false,

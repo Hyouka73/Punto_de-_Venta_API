@@ -164,6 +164,23 @@ const AppInner: React.FC = () => {
     return () => worker.stop();
   }, [adapterMode, webappUrl]);
 
+  // Sincronizar catálogo real desde Google Sheets al iniciar si está en modo sheets
+  useEffect(() => {
+    if (adapterMode === 'sheets') {
+      const adapter = createDataAdapter(adapterMode, webappUrl || undefined);
+      adapter
+        .getCatalog()
+        .then((res) => {
+          if (res?.items && res.items.length > 0) {
+            config.replaceCatalog(res.items);
+          }
+        })
+        .catch((err) => {
+          console.warn('[App] Sincronización de catálogo en segundo plano omitida:', err);
+        });
+    }
+  }, [adapterMode, webappUrl]);
+
   const totalHoy = useMemo(() => computeTotalHoy(session.movimientos), [session.movimientos]);
   const sold = useMemo(() => soldByProduct(session.movimientos), [session.movimientos]);
   const stock = useMemo(
@@ -373,7 +390,7 @@ const AppInner: React.FC = () => {
         <Suspense fallback={<LazyFallback />}>
           <SyncStatusScreen
             status={{ isOnline: true, isSyncing: false, pendingCount: 0, ...syncStatus }}
-            backendName={adapterMode === 'sheets' ? 'Google Sheets (Apps Script)' : undefined}
+            backendName={adapterMode === 'sheets' ? 'Google Sheets (Apps Script)' : 'Almacenamiento Local (IndexedDB)'}
             onForceSync={async () => {
               await workerRef.current?.triggerSync();
             }}

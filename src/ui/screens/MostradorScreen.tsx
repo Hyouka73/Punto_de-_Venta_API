@@ -17,6 +17,7 @@ import type { CatalogoItem } from '@/domain/config/types';
 import { triggerHaptic } from '../utils/haptics';
 import { ItemIcon } from '../utils/itemIcons';
 import { CountUp } from '../components/react-bits/CountUp';
+import { ENV } from '@/config/env';
 
 export interface RecentSale {
   readonly id: string;
@@ -64,7 +65,7 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
   jornadaActiva = true,
   stock = {},
   sold = {},
-  adapterMode = 'mock',
+  adapterMode = ENV.dataAdapter,
   onNavigateToApertura,
   onRegisterSale,
   onUndoSale,
@@ -277,7 +278,7 @@ export const MostradorScreen: React.FC<MostradorScreenProps> = ({
                   adapterMode === 'sheets' ? 'bg-sky-100 text-sky-800 border border-sky-300' : 'bg-stone-100 text-stone-600 border border-stone-200'
                 }`}
               >
-                {adapterMode === 'sheets' ? 'Sheets' : 'Mock'}
+                {adapterMode === 'sheets' ? 'Google Sheets' : 'Local Offline'}
               </span>
             </div>
           </div>

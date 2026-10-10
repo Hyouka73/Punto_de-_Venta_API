@@ -118,17 +118,19 @@ export function loadConfigState(storage: StorageLike | null): ConfigState {
   const storedMode = storage?.getItem(LS_KEYS.adapterMode);
   const storedUrl = storage?.getItem(LS_KEYS.webappUrl);
 
-  // Prioridad: Si no hay valor en storage, o si el entorno define sheets, tomar ENV
+  // Si el entorno está configurado con sheets (producción), usar sheets prioritariamente
   const adapterMode: AdapterMode =
-    storedMode === 'sheets' || storedMode === 'mock'
-      ? (storedMode as AdapterMode)
-      : (ENV.dataAdapter as AdapterMode);
+    ENV.dataAdapter === 'sheets'
+      ? 'sheets'
+      : (storedMode as AdapterMode) || 'mock';
 
-  // Si storage tiene URL no vacía, usarla; de lo contrario consumir automáticamente ENV.sheetsWebappUrl
+  // Si el entorno provee la URL de Apps Script, consumirla de forma directa
   const webappUrl =
-    storedUrl && storedUrl.trim().length > 0
+    ENV.sheetsWebappUrl && ENV.sheetsWebappUrl.trim().length > 0
+      ? ENV.sheetsWebappUrl
+      : storedUrl && storedUrl.trim().length > 0
       ? storedUrl
-      : ENV.sheetsWebappUrl || '';
+      : '';
 
   return {
     catalog: catalog && catalog.length > 0 ? normalizeOrder(catalog) : normalizeOrder(DEFAULT_CATALOG),
